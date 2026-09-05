@@ -1,0 +1,180 @@
+import { REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { localDay } from '../shared/date';
+import { errorMessage, request } from '../shared/messaging';
+import { meetsThreshold } from '../shared/progress';
+import type { Snapshot, VideoRecord } from '../shared/types';
+import { isWatched } from '../shared/watched-state';
+import { normalizeSettings } from '../storage/settings-store';
+import { isVideoRecord } from '../storage/watched-store';
+import { CardDecorator } from './card-decorator';
+import { detectCard, findCardRoots, type VideoCard } from './card-detector';
+import { CardObserver } from './observer';
+import { VideoTracker } from './video-tracker';
+import { watchNavigation } from './youtube-navigation';
+import { FeedRefiller } from './feed-refiller';
+import { PromotionalFilter } from './promotional-filter';
+import { HomeShortsFilter } from './home-shorts-filter';
+import { SELECTORS } from '../youtube/selectors';
+
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+function showError(error: unknown): void {
+  let toast = document.querySelector<HTMLElement>('.aw-toast');
+  if (!toast) { toast = document.createElement('div'); toast.className = 'aw-toast'; toast.setAttribute('role', 'status'); document.body.append(toast); }
+  toast.textContent = `Already Watched: ${errorMessage(error)}`;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast?.remove(), 6000);
+}
+
+async function start(): Promise<void> {
+  // Buffer events during initialization so a concurrent tab write cannot be lost
+  // between the initial snapshot and installing the change listener.
+  const buffered: Record<string, chrome.storage.StorageChange>[] = [];
+  let receive = (changes: Record<string, chrome.storage.StorageChange>): void => { buffered.push(changes); };
+  const storageListener = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => { if (area === 'local') receive(changes); };
+  chrome.storage.onChanged.addListener(storageListener);
+  let state: Snapshot;
+  try { state = await request<Snapshot>({ type: 'snapshot' }); }
+  catch (error) { chrome.storage.onChanged.removeListener(storageListener); throw error; }
+  const cards = new Map<HTMLElement, VideoCard>();
+  const byVideo = new Map<string, Set<HTMLElement>>();
+  const filtered = new Set<string>();
+  const seenToday = new Set<string>();
+  const touches = new Set<string>();
+  let day = localDay();
+  let lastAutomaticError = 0;
+  const onAutomaticError = (error: unknown): void => {
+    if (Date.now() - lastAutomaticError > 60_000) { showError(error); lastAutomaticError = Date.now(); }
+  };
+  const decorator = new CardDecorator((card, watched) => {
+    void request<VideoRecord>({ type: 'mark', videoId: card.videoId, title: card.title, watched }).catch(showError);
+  });
+  const tracker = new VideoTracker(() => state, onAutomaticError);
+  const refiller = new FeedRefiller(() => state.settings, () => cards.values());
+  const promotionalFilter = new PromotionalFilter(() => state.settings);
+  const homeShortsFilter = new HomeShortsFilter(() => state.settings);
+  function unregister(element: HTMLElement): void {
+    const old = cards.get(element);
+    if (old) {
+      const group = byVideo.get(old.videoId); group?.delete(element);
+      if (!group?.size) byVideo.delete(old.videoId);
+    }
+    cards.delete(element); decorator.clear(element);
+  }
+  function decorate(card: VideoCard): void {
+    const record = state.records[card.videoId];
+    const watched = isWatched(record, card.progress, card.shorts, state.settings);
+    decorator.apply(card, watched, record, state.settings);
+    if (card.element.closest(SELECTORS.sectionHidden)) return;
+    if (watched && !seenToday.has(card.videoId)) { filtered.add(card.videoId); seenToday.add(card.videoId); }
+    if (state.settings.enabled && record && Date.now() - record.lastSeen >= 3_600_000) touches.add(card.videoId);
+  }
+  function process(roots: Set<HTMLElement>): void {
+    for (const element of roots) {
+      const card = detectCard(element);
+      if (!card) { unregister(element); continue; }
+      const old = cards.get(element);
+      if (old?.videoId !== card.videoId) unregister(element);
+      cards.set(element, card);
+      let group = byVideo.get(card.videoId);
+      if (!group) { group = new Set(); byVideo.set(card.videoId, group); }
+      group.add(element); decorate(card);
+    }
+    refiller.schedule();
+  }
+  let pruneTimer: ReturnType<typeof setTimeout> | undefined;
+  const prune = (): void => {
+    if (pruneTimer) return;
+    pruneTimer = setTimeout(() => { pruneTimer = undefined; for (const element of cards.keys()) if (!element.isConnected) unregister(element); promotionalFilter.prune(); homeShortsFilter.prune(); }, 500);
+  };
+  const observer = new CardObserver(process, prune, () => refiller.schedule(), root => { promotionalFilter.update(root); homeShortsFilter.update(root); });
+  receive = changes => {
+    let all = false;
+    if (changes[SETTINGS_KEY]) {
+      state.settings = normalizeSettings(changes[SETTINGS_KEY].newValue);
+      promotionalFilter.update(document);
+      homeShortsFilter.update(document);
+      all = true;
+    }
+    if (changes[REVISION_KEY]) {
+      state.revision = Number(changes[REVISION_KEY].newValue) || 0;
+      tracker.reset(); filtered.clear(); touches.clear(); seenToday.clear();
+    }
+    const changedIds = new Set<string>();
+    for (const [key, change] of Object.entries(changes)) {
+      if (!key.startsWith(VIDEO_PREFIX)) continue;
+      const id = key.slice(VIDEO_PREFIX.length);
+      if (isVideoRecord(change.newValue)) state.records[id] = change.newValue;
+      else delete state.records[id];
+      changedIds.add(id);
+    }
+    if (all) process(new Set(cards.keys()));
+    else for (const id of changedIds) for (const element of byVideo.get(id) ?? []) {
+      const card = cards.get(element); if (card) decorate(card);
+    }
+    refiller.schedule();
+  };
+  buffered.forEach(receive);
+  observer.start();
+  const stopNavigation = watchNavigation(() => { tracker.navigationStart(); refiller.navigationStart(); }, () => { tracker.navigationFinish(); refiller.navigationFinish(); observer.scan(); prune(); });
+  let flushing = false;
+  async function flushCounters(): Promise<void> {
+    if (flushing) return;
+    flushing = true;
+    const revision = state.revision;
+    const ids = [...filtered].slice(0, 500); ids.forEach(id => filtered.delete(id));
+    const touchedIds = [...touches].slice(0, 500); touchedIds.forEach(id => touches.delete(id));
+    try {
+      if (ids.length) await request({ type: 'filtered', videoIds: ids, revision });
+      if (touchedIds.length) await request({ type: 'touch', videoIds: touchedIds, revision });
+    } catch (error) {
+      if (revision === state.revision) { ids.forEach(id => filtered.add(id)); touchedIds.forEach(id => touches.add(id)); }
+      onAutomaticError(error);
+    } finally { flushing = false; }
+  }
+  const counters = setInterval(() => {
+    if (day !== localDay()) {
+      // Flush yesterday's pending observations before counting a new local day.
+      filtered.clear(); seenToday.clear(); day = localDay(); cards.forEach(decorate);
+    }
+    void flushCounters();
+  }, 5000);
+  const onVisibility = (): void => { if (document.hidden) void flushCounters(); };
+  document.addEventListener('visibilitychange', onVisibility);
+  const messageListener = (message: unknown, sender: chrome.runtime.MessageSender, respond: (value: unknown) => void): boolean => {
+    if (sender.id !== chrome.runtime.id || !message || typeof message !== 'object') return false;
+    const data = message as Record<string, unknown>;
+    if (data.type === 'aw-error') { showError(new Error(String(data.error))); return false; }
+    if (data.type !== 'scan-page') return false;
+    void (async () => {
+      const videos = new Map<string, { videoId: string; title?: string; progress: number }>();
+      for (const element of findCardRoots(document)) {
+        const card = detectCard(element);
+        if (!card || (card.shorts && !state.settings.applyToShorts) || card.progress === null || !meetsThreshold(card.progress, state.settings.threshold)) continue;
+        videos.set(card.videoId, { videoId: card.videoId, title: card.title, progress: card.progress });
+      }
+      let imported = 0;
+      const list = [...videos.values()];
+      const revision = state.revision;
+      for (let i = 0; i < list.length; i += 500) {
+        const result = await request<{ imported?: number; stale?: boolean }>({ type: 'import', videos: list.slice(i, i + 500), revision });
+        if (result.stale) throw new Error('History changed during the scan. Please try again.');
+        imported += result.imported ?? 0;
+      }
+      return { imported, detected: videos.size };
+    })().then(result => respond({ ok: true, data: result }), error => respond({ ok: false, error: errorMessage(error) }));
+    return true;
+  };
+  chrome.runtime.onMessage.addListener(messageListener);
+  window.addEventListener('pagehide', () => {
+    void flushCounters(); observer.stop(); tracker.stop(); refiller.stop(); stopNavigation(); clearInterval(counters);
+    promotionalFilter.clear();
+    homeShortsFilter.clear();
+    if (pruneTimer) clearTimeout(pruneTimer);
+    chrome.storage.onChanged.removeListener(storageListener);
+    chrome.runtime.onMessage.removeListener(messageListener);
+    document.removeEventListener('visibilitychange', onVisibility);
+    for (const element of cards.keys()) unregister(element);
+  }, { once: true });
+}
+window.addEventListener('pageshow', event => { if (event.persisted) void start().catch(showError); });
+void start().catch(showError);

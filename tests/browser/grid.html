@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Already Watched · grid regression</title><link rel="stylesheet" href="/content.css"><style>
+body { font: 16px/1.5 system-ui; margin: 24px; }
+ytd-rich-grid-renderer { display: block; --ytd-rich-grid-items-per-row: 3; }
+ytd-rich-grid-renderer > #contents { display: flex; flex-wrap: wrap; width: 900px; max-width: 100%; }
+ytd-rich-item-renderer { display: block; width: calc(100% / var(--ytd-rich-grid-items-per-row) - 16px); margin: 0 8px 32px; }
+ytd-rich-item-renderer a { display: block; height: 100px; background: #dae9da; }
+ytd-rich-section-renderer { display: block; width: 100%; height: 90px; background: #e5e5f5; }
+</style></head><body><h1>Hidden-card gap regression</h1><p id="status" role="status">Checking layout…</p><ytd-rich-grid-renderer><div id="contents"></div></ytd-rich-grid-renderer><script src="/grid-fixture.js"></script></body></html>

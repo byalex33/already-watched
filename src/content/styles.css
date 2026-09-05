@@ -1,0 +1,30 @@
+.aw-thumbnail { position: relative !important; }
+.aw-badge { position: absolute; z-index: 4; left: 8px; bottom: 8px; padding: 5px 8px; border-radius: 5px; background: rgba(15, 24, 22, .94); color: #c7f6dd; border: 1px solid rgba(187, 239, 211, .35); box-shadow: 0 1px 5px #0005; font: 600 10px/1.5 system-ui, sans-serif; letter-spacing: .06em; white-space: pre-line; pointer-events: none; text-align: left; }
+.aw-badge[hidden] { display: none !important; }
+.aw-dim { opacity: .57 !important; transition: opacity .15s ease; }
+.aw-dim:hover, .aw-dim:focus-within { opacity: 1 !important; }
+.aw-hidden { display: none !important; }
+.aw-promo-hidden { display: none !important; }
+.aw-home-shorts-hidden { display: none !important; }
+/* Flex wrapping stops at full-width shelves. Dense placement lets later cards
+   fill earlier holes without moving YouTube's DOM nodes or event handlers. */
+ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden) {
+  display: grid !important;
+  grid-template-columns: repeat(var(--ytd-rich-grid-items-per-row, 3), minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  align-items: start;
+}
+ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden) > ytd-rich-item-renderer {
+  width: auto !important;
+  min-width: 0 !important;
+}
+ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden) > :not(ytd-rich-item-renderer) {
+  grid-column: 1 / -1;
+}
+/* Briefly intersect YouTube's own continuation without scrolling the page. */
+.aw-refill-probe { position: fixed !important; top: calc(100vh - 2px) !important; bottom: auto !important; left: 0 !important; right: auto !important; width: 1px !important; height: 1px !important; min-height: 0 !important; margin: 0 !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+.aw-control { position: absolute; top: 8px; left: 8px; z-index: 5; width: 30px; height: 30px; padding: 0; border: 1px solid #ffffff66; border-radius: 50%; background: #13241fee; color: #e0ffed; font: 700 18px/28px system-ui, sans-serif; cursor: pointer; opacity: 0; transition: opacity .15s ease; }
+.aw-card:hover .aw-control, .aw-card:focus-within .aw-control, .aw-control:focus-visible { opacity: 1; }
+.aw-control:focus-visible { outline: 2px solid #a4f3cb; outline-offset: 3px; }
+.aw-toast { position: fixed; bottom: 24px; left: 24px; z-index: 2147483647; max-width: 380px; padding: 12px 18px; background: #182823; color: #edfff3; border: 1px solid #8acba5; border-radius: 10px; font: 14px/1.5 system-ui, sans-serif; box-shadow: 0 4px 20px #0005; }
+@media (prefers-reduced-motion: reduce) { .aw-dim, .aw-control { transition: none; } }

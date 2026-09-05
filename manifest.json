@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Already Watched",
+  "version": "1.0.0",
+  "description": "A quieter YouTube feed. Mark, dim, or hide videos you've already watched. Private and entirely local.",
+  "minimum_chrome_version": "114",
+  "permissions": ["storage", "contextMenus"],
+  "host_permissions": ["https://www.youtube.com/*", "https://youtube.com/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_popup": "popup.html", "default_title": "Already Watched", "default_icon": { "16": "icons/16.png", "32": "icons/32.png" } },
+  "options_ui": { "page": "popup.html", "open_in_tab": true },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "content_scripts": [{
+    "matches": ["https://www.youtube.com/*", "https://youtube.com/*"],
+    "js": ["content.js"], "css": ["content.css"], "run_at": "document_idle"
+  }],
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'none'" }
+}
