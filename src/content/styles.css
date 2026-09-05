@@ -6,19 +6,20 @@
 .aw-hidden { display: none !important; }
 .aw-promo-hidden { display: none !important; }
 .aw-home-shorts-hidden { display: none !important; }
+.aw-playlist-hidden { display: none !important; }
 /* Flex wrapping stops at full-width shelves. Dense placement lets later cards
    fill earlier holes without moving YouTube's DOM nodes or event handlers. */
-ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden) {
+ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden, > .aw-playlist-hidden) {
   display: grid !important;
   grid-template-columns: repeat(var(--ytd-rich-grid-items-per-row, 3), minmax(0, 1fr));
   grid-auto-flow: row dense;
   align-items: start;
 }
-ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden) > ytd-rich-item-renderer {
+ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden, > .aw-playlist-hidden) > ytd-rich-item-renderer {
   width: auto !important;
   min-width: 0 !important;
 }
-ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden) > :not(ytd-rich-item-renderer) {
+ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden, > .aw-playlist-hidden) > :not(ytd-rich-item-renderer) {
   grid-column: 1 / -1;
 }
 /* Briefly intersect YouTube's own continuation without scrolling the page. */

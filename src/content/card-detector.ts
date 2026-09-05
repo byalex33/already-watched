@@ -1,6 +1,7 @@
 import { cardRoot, SELECTORS } from '../youtube/selectors';
 import { parseVideoUrl } from '../youtube/video-id';
 import { youtubeProgress } from '../youtube/progress-detection';
+import { isPlaylistCard } from '../youtube/playlist-detection';
 export interface VideoCard {
   element: HTMLElement;
   thumbnail: HTMLElement;
@@ -11,6 +12,7 @@ export interface VideoCard {
 }
 export function detectCard(element: HTMLElement): VideoCard | null {
   if (element.matches(SELECTORS.adCard) || element.querySelector(SELECTORS.adCard)) return null;
+  if (isPlaylistCard(element)) return null;
   const links = [...element.querySelectorAll<HTMLAnchorElement>(SELECTORS.videoLinks)];
   const anchor = links.find(link => link.matches(SELECTORS.thumbnail)) ?? links[0];
   if (!anchor) return null;
@@ -27,7 +29,7 @@ export function findCardRoots(root: Element | Document): Set<HTMLElement> {
     const own = cardRoot(root);
     if (own) found.add(own);
   }
-  root.querySelectorAll(SELECTORS.videoLinks).forEach(link => {
+  root.querySelectorAll(`${SELECTORS.videoLinks},${SELECTORS.playlistLinks}`).forEach(link => {
     const card = cardRoot(link);
     if (card) found.add(card);
   });

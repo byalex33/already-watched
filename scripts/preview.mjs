@@ -6,7 +6,7 @@ import { build } from 'esbuild';
 const root = resolve('dist');
 const mock = `
 const listeners = new Set();
-let settings = { enabled:true, displayMode:'badge-dim', threshold:70, useYouTubeProgress:true, applyToShorts:true, showWatchedDate:true, hidePromotionalSections:false, hideHomeShorts:false };
+let settings = { enabled:true, displayMode:'badge-dim', threshold:70, useYouTubeProgress:true, applyToShorts:true, showWatchedDate:true, hidePromotionalSections:false, hideHomeShorts:false, hidePlaylists:false };
 let watchedCount = 1248, filteredToday = 32, filteredAllTime = 864;
 window.chrome = {
   storage: { onChanged: { addListener:fn=>listeners.add(fn), removeListener:fn=>listeners.delete(fn) } },

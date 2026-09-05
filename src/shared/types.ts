@@ -8,6 +8,7 @@ export interface Settings {
   showWatchedDate: boolean;
   hidePromotionalSections: boolean;
   hideHomeShorts: boolean;
+  hidePlaylists: boolean;
 }
 export type Segment = [number, number];
 export interface VideoRecord {

@@ -1,7 +1,14 @@
 // Keep DOM knowledge here. Unknown renderers are left intact, rather than hiding
 // a guessed ancestor that might contain an entire shelf or playlist.
 export const SELECTORS = {
-  cards: ['ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-compact-video-renderer', 'ytd-grid-video-renderer', 'ytd-playlist-video-renderer', 'ytd-reel-item-renderer', 'yt-lockup-view-model', 'yt-lockup-view-model-wiz', 'yt-shorts-lockup-view-model', 'ytm-shorts-lockup-view-model'].join(','),
+  cards: ['ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-compact-video-renderer', 'ytd-grid-video-renderer', 'ytd-playlist-video-renderer', 'ytd-reel-item-renderer', 'yt-lockup-view-model', 'yt-lockup-view-model-wiz', 'yt-shorts-lockup-view-model', 'ytm-shorts-lockup-view-model', 'ytd-playlist-renderer', 'ytd-grid-playlist-renderer', 'ytd-compact-playlist-renderer', 'ytd-radio-renderer', 'ytd-grid-radio-renderer', 'ytd-compact-radio-renderer'].join(','),
+  playlistRenderers: 'ytd-playlist-renderer, ytd-grid-playlist-renderer, ytd-compact-playlist-renderer, ytd-radio-renderer, ytd-grid-radio-renderer, ytd-compact-radio-renderer',
+  playlistEntries: 'ytd-playlist-video-renderer, ytd-playlist-panel-video-renderer',
+  playlistLinks: 'a[href*="/playlist?"]',
+  playlistPrimaryLinks: 'a#thumbnail, a#video-title, a#video-title-link, a#view-more, a#view-full-playlist, h3 a, a.yt-lockup-view-model__content-image, a.yt-lockup-view-model-wiz__content-image',
+  playlistCollection: 'yt-collection-thumbnail-view-model, ytd-thumbnail-overlay-side-panel-renderer',
+  playlistBadges: 'ytd-thumbnail-overlay-bottom-panel-renderer, ytd-thumbnail-overlay-side-panel-renderer, #video-count, yt-badge-view-model, .yt-badge-shape__text, .yt-badge-shape-wiz__text',
+  cardDescription: '#description, #description-text, ytd-text-inline-expander, .metadata-snippet-container',
   videoLinks: 'a[href*="/watch?"],a[href*="/shorts/"],a[href*="youtu.be/"],a[href*="/live/"]',
   thumbnail: 'a#thumbnail, a.yt-lockup-view-model__content-image, a.yt-lockup-view-model-wiz__content-image, a.shortsLockupViewModelHostEndpoint, ytd-thumbnail a, a:has(img)',
   title: '#video-title, #video-title-link, .yt-lockup-metadata-view-model__title, .yt-lockup-metadata-view-model-wiz__title, .shortsLockupViewModelHostMetadataTitle',
@@ -28,7 +35,7 @@ export const SELECTORS = {
   promotionalOuter: 'ytd-rich-section-renderer',
   promotionalShelves: 'ytd-rich-shelf-renderer, ytd-shelf-renderer, ytd-horizontal-card-list-renderer, ytd-exploratory-results-renderer, ytd-mini-game-shelf-renderer, ytd-chips-shelf-with-video-shelf-renderer',
   homeShortsShelves: 'ytd-rich-shelf-renderer[is-shorts], ytd-reel-shelf-renderer',
-  sectionHidden: '.aw-promo-hidden, .aw-home-shorts-hidden',
+  sectionHidden: '.aw-promo-hidden, .aw-home-shorts-hidden, .aw-playlist-hidden',
   extensionOwned: '.aw-badge, .aw-control, .aw-toast'
 } as const;
 

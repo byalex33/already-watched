@@ -11,7 +11,8 @@ export function normalizeSettings(value: unknown): Settings {
     applyToShorts: typeof input.applyToShorts === 'boolean' ? input.applyToShorts : DEFAULT_SETTINGS.applyToShorts,
     showWatchedDate: typeof input.showWatchedDate === 'boolean' ? input.showWatchedDate : DEFAULT_SETTINGS.showWatchedDate,
     hidePromotionalSections: typeof input.hidePromotionalSections === 'boolean' ? input.hidePromotionalSections : DEFAULT_SETTINGS.hidePromotionalSections,
-    hideHomeShorts: typeof input.hideHomeShorts === 'boolean' ? input.hideHomeShorts : DEFAULT_SETTINGS.hideHomeShorts
+    hideHomeShorts: typeof input.hideHomeShorts === 'boolean' ? input.hideHomeShorts : DEFAULT_SETTINGS.hideHomeShorts,
+    hidePlaylists: typeof input.hidePlaylists === 'boolean' ? input.hidePlaylists : DEFAULT_SETTINGS.hidePlaylists
   };
 }
 export async function getSettings(): Promise<Settings> {

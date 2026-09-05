@@ -15,6 +15,7 @@ import { FeedRefiller } from './feed-refiller';
 import { PromotionalFilter } from './promotional-filter';
 import { HomeShortsFilter } from './home-shorts-filter';
 import { SELECTORS } from '../youtube/selectors';
+import { PlaylistFilter } from './playlist-filter';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 function showError(error: unknown): void {
@@ -52,6 +53,7 @@ async function start(): Promise<void> {
   const refiller = new FeedRefiller(() => state.settings, () => cards.values());
   const promotionalFilter = new PromotionalFilter(() => state.settings);
   const homeShortsFilter = new HomeShortsFilter(() => state.settings);
+  const playlistFilter = new PlaylistFilter(() => state.settings);
   function unregister(element: HTMLElement): void {
     const old = cards.get(element);
     if (old) {
@@ -84,15 +86,16 @@ async function start(): Promise<void> {
   let pruneTimer: ReturnType<typeof setTimeout> | undefined;
   const prune = (): void => {
     if (pruneTimer) return;
-    pruneTimer = setTimeout(() => { pruneTimer = undefined; for (const element of cards.keys()) if (!element.isConnected) unregister(element); promotionalFilter.prune(); homeShortsFilter.prune(); }, 500);
+    pruneTimer = setTimeout(() => { pruneTimer = undefined; for (const element of cards.keys()) if (!element.isConnected) unregister(element); promotionalFilter.prune(); homeShortsFilter.prune(); playlistFilter.prune(); }, 500);
   };
-  const observer = new CardObserver(process, prune, () => refiller.schedule(), root => { promotionalFilter.update(root); homeShortsFilter.update(root); });
+  const observer = new CardObserver(process, prune, () => refiller.schedule(), root => { promotionalFilter.update(root); homeShortsFilter.update(root); playlistFilter.update(root); });
   receive = changes => {
     let all = false;
     if (changes[SETTINGS_KEY]) {
       state.settings = normalizeSettings(changes[SETTINGS_KEY].newValue);
       promotionalFilter.update(document);
       homeShortsFilter.update(document);
+      playlistFilter.update(document);
       all = true;
     }
     if (changes[REVISION_KEY]) {
@@ -169,6 +172,7 @@ async function start(): Promise<void> {
     void flushCounters(); observer.stop(); tracker.stop(); refiller.stop(); stopNavigation(); clearInterval(counters);
     promotionalFilter.clear();
     homeShortsFilter.clear();
+    playlistFilter.clear();
     if (pruneTimer) clearTimeout(pruneTimer);
     chrome.storage.onChanged.removeListener(storageListener);
     chrome.runtime.onMessage.removeListener(messageListener);

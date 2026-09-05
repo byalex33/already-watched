@@ -85,6 +85,7 @@ export function App() {
       <p className="hint">Based on playback observed by the extension, excluding skips.</p>
     </section>
     <section className="toggles">
+      <Toggle label="Hide playlists and Mixes" description="Removes playlist cards and YouTube’s auto-generated Mixes. Individual videos stay available." checked={settings.hidePlaylists} onChange={hidePlaylists => { void update({ hidePlaylists }); }} />
       <Toggle label="Hide Shorts on Home" description="Removes Shorts shelves and cards from the Home feed only." checked={settings.hideHomeShorts} onChange={hideHomeShorts => { void update({ hideHomeShorts }); }} />
       <Toggle label="Hide Playables and topic suggestions" description="Hides YouTube Playables, “Instant games, no downloads”, and “Explore more topics” sections." checked={settings.hidePromotionalSections} onChange={hidePromotionalSections => { void update({ hidePromotionalSections }); }} />
       <Toggle label="Use YouTube progress bars as watched indicators" description="Uses the same percentage threshold. No watch date is assumed." checked={settings.useYouTubeProgress} onChange={useYouTubeProgress => { void update({ useYouTubeProgress }); }} />

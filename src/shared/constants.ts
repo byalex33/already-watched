@@ -1,7 +1,7 @@
 import type { Settings } from './types';
 export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   enabled: true, displayMode: 'badge-dim', threshold: 70,
-  useYouTubeProgress: true, applyToShorts: true, showWatchedDate: true, hidePromotionalSections: false, hideHomeShorts: false
+  useYouTubeProgress: true, applyToShorts: true, showWatchedDate: true, hidePromotionalSections: false, hideHomeShorts: false, hidePlaylists: false
 });
 export const VIDEO_PREFIX = 'video:';
 export const SETTINGS_KEY = 'settings';
