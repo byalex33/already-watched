@@ -6,7 +6,10 @@ export function parseProgressPercent(value: string | null): number | null {
 }
 export function youtubeProgress(root: Element): number | null {
   let best: number | null = null;
-  for (const element of root.querySelectorAll<HTMLElement>(SELECTORS.progress)) {
+  for (const element of root.querySelectorAll<HTMLElement>(`${SELECTORS.progress},${SELECTORS.resumeProgress}`)) {
+    // This segment also represents current/preview playback. A genuine resume
+    // overlay in the same card remains eligible; stored history is unaffected.
+    if (element.matches(SELECTORS.playbackProgress) && root.querySelector(SELECTORS.nowPlaying)) continue;
     // aria-hidden often means decorative, not visually hidden, on thumbnails.
     if (element.hidden || element.closest('[hidden]')) continue;
     if (element.matches('[role="progressbar"]') && !element.closest(SELECTORS.progressHost)) continue;

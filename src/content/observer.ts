@@ -16,6 +16,8 @@ export class CardObserver {
         if (owner) this.roots.add(owner);
         const promotionalSection = target.closest(SELECTORS.promotionalSections);
         if (promotionalSection) this.roots.add(promotionalSection);
+        const shortsGrid = target.closest(SELECTORS.homeShortsGridShelves);
+        if (shortsGrid) this.roots.add(shortsGrid);
         const continuation = target.closest(SELECTORS.continuation);
         if (continuation) this.roots.add(continuation);
         if (mutation.type === 'childList') {
@@ -30,7 +32,7 @@ export class CardObserver {
     });
   }
   start(): void {
-    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['href', 'style', 'aria-valuenow', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts'] });
+    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['href', 'style', 'aria-valuenow', 'aria-valuemax', 'now-playing-badge', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts'] });
     this.scan();
   }
   scan(): void {

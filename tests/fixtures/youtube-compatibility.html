@@ -1,0 +1,31 @@
+<!-- Reduced structural fixtures from reference selectors; not live page captures. -->
+<template id="search-ytw">
+  <ytd-search><ytd-item-section-renderer><ytd-video-renderer>
+    <ytd-thumbnail><a id="thumbnail" href="/watch?v=dQw4w9WgXcQ"><img alt="Example">
+      <ytw-thumbnail-overlay-resume-playback-renderer>
+        <div class="ytwThumbnailOverlayResumePlaybackRendererThumbnailOverlayResumePlaybackProgress" style="width:85%"></div>
+      </ytw-thumbnail-overlay-resume-playback-renderer>
+    </a></ytd-thumbnail>
+    <h3><a id="video-title" href="/watch?v=dQw4w9WgXcQ">Search video</a></h3>
+  </ytd-video-renderer></ytd-item-section-renderer></ytd-search>
+</template>
+<template id="related-playing">
+  <ytd-watch-flexy><div id="related"><yt-lockup-view-model>
+    <a class="yt-lockup-view-model__content-image" href="/watch?v=dQw4w9WgXcQ"><img alt="Example">
+      <yt-thumbnail-overlay-progress-bar-view-model>
+        <div class="ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment" style="width:95%"></div>
+      </yt-thumbnail-overlay-progress-bar-view-model>
+      <ytd-thumbnail-overlay-now-playing-renderer now-playing-badge></ytd-thumbnail-overlay-now-playing-renderer>
+    </a>
+    <h3 class="yt-lockup-metadata-view-model__title">Related video</h3>
+  </yt-lockup-view-model></div></ytd-watch-flexy>
+</template>
+<template id="shorts-grid">
+  <ytd-browse><grid-shelf-view-model>
+    <h2>Shorts</h2>
+    <ytm-shorts-lockup-view-model-v2>
+      <a class="shortsLockupViewModelHostEndpoint" href="/shorts/dQw4w9WgXcQ"><img alt="Example"></a>
+      <h3 class="shortsLockupViewModelHostMetadataTitle">Short video</h3>
+    </ytm-shorts-lockup-view-model-v2>
+  </grid-shelf-view-model></ytd-browse>
+</template>

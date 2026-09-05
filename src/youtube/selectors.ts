@@ -1,7 +1,7 @@
 // Keep DOM knowledge here. Unknown renderers are left intact, rather than hiding
 // a guessed ancestor that might contain an entire shelf or playlist.
 export const SELECTORS = {
-  cards: ['ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-compact-video-renderer', 'ytd-grid-video-renderer', 'ytd-playlist-video-renderer', 'ytd-reel-item-renderer', 'yt-lockup-view-model', 'yt-lockup-view-model-wiz', 'yt-shorts-lockup-view-model', 'ytm-shorts-lockup-view-model', 'ytd-playlist-renderer', 'ytd-grid-playlist-renderer', 'ytd-compact-playlist-renderer', 'ytd-radio-renderer', 'ytd-grid-radio-renderer', 'ytd-compact-radio-renderer'].join(','),
+  cards: ['ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-compact-video-renderer', 'ytd-grid-video-renderer', 'ytd-playlist-video-renderer', 'ytd-reel-item-renderer', 'yt-lockup-view-model', 'yt-lockup-view-model-wiz', 'yt-shorts-lockup-view-model', 'ytm-shorts-lockup-view-model', 'ytm-shorts-lockup-view-model-v2', 'ytd-playlist-renderer', 'ytd-grid-playlist-renderer', 'ytd-compact-playlist-renderer', 'ytd-radio-renderer', 'ytd-grid-radio-renderer', 'ytd-compact-radio-renderer'].join(','),
   playlistRenderers: 'ytd-playlist-renderer, ytd-grid-playlist-renderer, ytd-compact-playlist-renderer, ytd-radio-renderer, ytd-grid-radio-renderer, ytd-compact-radio-renderer',
   playlistEntries: 'ytd-playlist-video-renderer, ytd-playlist-panel-video-renderer',
   playlistLinks: 'a[href*="/playlist?"]',
@@ -13,7 +13,10 @@ export const SELECTORS = {
   thumbnail: 'a#thumbnail, a.yt-lockup-view-model__content-image, a.yt-lockup-view-model-wiz__content-image, a.shortsLockupViewModelHostEndpoint, ytd-thumbnail a, a:has(img)',
   title: '#video-title, #video-title-link, .yt-lockup-metadata-view-model__title, .yt-lockup-metadata-view-model-wiz__title, .shortsLockupViewModelHostMetadataTitle',
   progress: 'ytd-thumbnail-overlay-resume-playback-renderer #progress, ytd-thumbnail-overlay-resume-playback-renderer [style*="width"], .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment, .yt-thumbnail-overlay-progress-bar-view-model__progress-bar, [role="progressbar"][aria-valuenow]',
-  progressHost: 'ytd-thumbnail-overlay-resume-playback-renderer, yt-thumbnail-overlay-progress-bar-view-model, .ytThumbnailOverlayProgressBarHost',
+  resumeProgress: 'ytw-thumbnail-overlay-resume-playback-renderer .ytwThumbnailOverlayResumePlaybackRendererThumbnailOverlayResumePlaybackProgress',
+  playbackProgress: '.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment',
+  nowPlaying: 'ytd-thumbnail-overlay-now-playing-renderer[now-playing-badge]',
+  progressHost: 'ytd-thumbnail-overlay-resume-playback-renderer, ytw-thumbnail-overlay-resume-playback-renderer, yt-thumbnail-overlay-progress-bar-view-model, .ytThumbnailOverlayProgressBarHost',
   adCard: 'ytd-ad-slot-renderer, ytd-display-ad-renderer, ytd-promoted-video-renderer, ytd-in-feed-ad-layout-renderer, ytd-promoted-sparkles-web-renderer',
   mainPlayer: '#movie_player',
   mainVideo: '#movie_player video.html5-main-video',
@@ -35,6 +38,8 @@ export const SELECTORS = {
   promotionalOuter: 'ytd-rich-section-renderer',
   promotionalShelves: 'ytd-rich-shelf-renderer, ytd-shelf-renderer, ytd-horizontal-card-list-renderer, ytd-exploratory-results-renderer, ytd-mini-game-shelf-renderer, ytd-chips-shelf-with-video-shelf-renderer',
   homeShortsShelves: 'ytd-rich-shelf-renderer[is-shorts], ytd-reel-shelf-renderer',
+  homeShortsGridShelves: 'grid-shelf-view-model',
+  shortsLockups: 'yt-shorts-lockup-view-model, ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2',
   sectionHidden: '.aw-promo-hidden, .aw-home-shorts-hidden, .aw-playlist-hidden',
   extensionOwned: '.aw-badge, .aw-control, .aw-toast'
 } as const;
