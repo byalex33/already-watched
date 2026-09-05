@@ -7,6 +7,10 @@
 .aw-promo-hidden { display: none !important; }
 .aw-home-shorts-hidden { display: none !important; }
 .aw-playlist-hidden { display: none !important; }
+.aw-menu-action { display: block; box-sizing: border-box; width: 100%; min-height: 40px; border: 0; border-top: 1px solid var(--yt-spec-10-percent-layer, #8884); padding: 10px 16px; background: transparent; color: var(--yt-spec-text-primary, inherit); text-align: start; font: 400 14px/20px Roboto, Arial, sans-serif; cursor: pointer; }
+.aw-menu-action:hover, .aw-menu-action:focus-visible { background: var(--yt-spec-badge-chip-background, #8882); }
+.aw-menu-action:focus-visible { outline: 2px solid var(--yt-spec-call-to-action, #3ea6ff); outline-offset: -2px; }
+.aw-menu-action:disabled { opacity: .65; cursor: progress; }
 /* Flex wrapping stops at full-width shelves. Dense placement lets later cards
    fill earlier holes without moving YouTube's DOM nodes or event handlers. */
 ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-home-shorts-hidden, > .aw-playlist-hidden) {

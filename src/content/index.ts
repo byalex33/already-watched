@@ -16,6 +16,7 @@ import { PromotionalFilter } from './promotional-filter';
 import { HomeShortsFilter } from './home-shorts-filter';
 import { SELECTORS } from '../youtube/selectors';
 import { PlaylistFilter } from './playlist-filter';
+import { VideoMenu } from './video-menu';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 function showError(error: unknown): void {
@@ -50,6 +51,11 @@ async function start(): Promise<void> {
     void request<VideoRecord>({ type: 'mark', videoId: card.videoId, title: card.title, watched }).catch(showError);
   });
   const tracker = new VideoTracker(() => state, onAutomaticError);
+  const videoMenu = new VideoMenu(
+    card => isWatched(state.records[card.videoId], card.progress, card.shorts, { ...state.settings, enabled: true, applyToShorts: true }),
+    (card, watched) => request<VideoRecord>({ type: 'mark', videoId: card.videoId, title: card.title, watched }),
+    showError
+  );
   const refiller = new FeedRefiller(() => state.settings, () => cards.values());
   const promotionalFilter = new PromotionalFilter(() => state.settings);
   const homeShortsFilter = new HomeShortsFilter(() => state.settings);
@@ -118,7 +124,7 @@ async function start(): Promise<void> {
   };
   buffered.forEach(receive);
   observer.start();
-  const stopNavigation = watchNavigation(() => { tracker.navigationStart(); refiller.navigationStart(); }, () => { tracker.navigationFinish(); refiller.navigationFinish(); observer.scan(); prune(); });
+  const stopNavigation = watchNavigation(() => { tracker.navigationStart(); refiller.navigationStart(); videoMenu.reset(); }, () => { tracker.navigationFinish(); refiller.navigationFinish(); observer.scan(); prune(); });
   let flushing = false;
   async function flushCounters(): Promise<void> {
     if (flushing) return;
@@ -170,6 +176,7 @@ async function start(): Promise<void> {
   chrome.runtime.onMessage.addListener(messageListener);
   window.addEventListener('pagehide', () => {
     void flushCounters(); observer.stop(); tracker.stop(); refiller.stop(); stopNavigation(); clearInterval(counters);
+    videoMenu.stop();
     promotionalFilter.clear();
     homeShortsFilter.clear();
     playlistFilter.clear();

@@ -51,6 +51,7 @@ With the preview server running, `http://127.0.0.1:4177/continuation-fixture` ex
 - Marks a video as watched when those segments reach your threshold. The first recorded mark date is preserved and progress continues updating. Changing the threshold affects future automatic marks and UI hints; it does not retroactively erase watched records.
 - Optionally uses YouTube's thumbnail progress bars at the same threshold. These transient hints do **not** create a database entry and never supply a made-up watch date.
 - Hover/focus a thumbnail and use **✓** to mark watched or **↶** to mark unwatched. You can also right-click a YouTube video link, or the current watch page, for Chrome context-menu commands. Manual marks work independently of the enabled toggle.
+- Open a video's native **three-dot menu** and choose **Add to watched**, or **Remove from watched** to undo. This uses the same local history and manual override as thumbnail controls. The item follows the card that opened YouTube's shared dropdown, supports keyboard activation, and disappears when the menu closes or you navigate. Unsupported menu layouts and playlist/Mix menus are left untouched.
 - Marking unwatched clears observed progress for that video and suppresses YouTube hints and imports for it. Fresh playback reaching the threshold, or another manual mark, can mark it watched again.
 - **Scan current YouTube page for watched videos** imports qualifying progress bars from cards currently rendered in the active tab. It does not scroll, fetch the account's history, or access an API. Already-watched records and manual unwatched overrides are preserved. Import time is stored separately from watch time.
 - Clearing history removes local video records, partial playback, overrides, and statistics, while keeping settings. Open tabs discard pre-reset playback batches. YouTube's own red-bar hints can immediately appear again; disable that setting if you want only fresh extension history. New playback can subsequently rebuild history.
@@ -94,6 +95,7 @@ src/content/
   playlist-filter.ts         reversible playlist and Mix collection-card filtering
   card-detector.ts             maps supported renderer elements to video cards
   card-decorator.ts            idempotent badges, dim/hide and manual controls
+  video-menu.ts                watched/undo actions in native three-dot video menus
   youtube-navigation.ts       SPA events, popstate and lightweight URL fallback
   styles.css                  namespaced, reversible YouTube decorations
 src/storage/                  settings, per-video record operations, stats logic
