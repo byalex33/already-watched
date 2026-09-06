@@ -23,6 +23,14 @@ beforeEach(() => {
   repository = new Repository();
 });
 describe('single-writer repository', () => {
+  it('rejects a reset when its revision cannot advance without changing stored history', async () => {
+    data[REVISION_KEY] = Number.MAX_SAFE_INTEGER;
+    data[videoKey(id)] = { videoId: id, watched: true, progress: 1, source: 'manual', lastSeen: Date.now() };
+    const previous = structuredClone(data);
+    await expect(repository.dispatch({ type: 'clear' })).rejects.toThrow('History revision limit reached');
+    expect(data).toEqual(previous);
+    expect(sessionData).toEqual({});
+  });
   it('counts late observations on their original day and deduplicates across restarts', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 6, 0, 0, 1));

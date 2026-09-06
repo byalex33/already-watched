@@ -66,6 +66,7 @@ export class Repository {
     if ('revision' in message && message.revision !== revision) return { stale: true };
     const stats = normalizeStats(meta[STATS_KEY]);
     if (message.type === 'clear') {
+      if (!Number.isSafeInteger(revision + 1) || revision + 1 < 1) throw new Error('History revision limit reached');
       // Session storage has a separate quota and survives worker restarts. Record
       // intent there before freeing local space; recovery rejects old tab writes.
       await chrome.storage.session.set({ [PENDING_RESET_KEY]: revision + 1 });
