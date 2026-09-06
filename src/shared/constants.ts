@@ -8,3 +8,5 @@ export const SETTINGS_KEY = 'settings';
 export const STATS_KEY = 'stats';
 export const REVISION_KEY = 'historyRevision';
 export const ERROR_KEY = 'storageError';
+
+export const FILTERED_PREFIX = 'filtered:';

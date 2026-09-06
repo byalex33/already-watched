@@ -1,4 +1,5 @@
-import { ERROR_KEY, REVISION_KEY, SETTINGS_KEY, STATS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { FILTERED_PREFIX, ERROR_KEY, REVISION_KEY, SETTINGS_KEY, STATS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { isVideoId } from '../youtube/video-id';
 import { localDay } from '../shared/date';
 import type { Request, Snapshot, Stats, Summary, VideoRecord } from '../shared/types';
 import { getSettings, normalizeSettings } from '../storage/settings-store';
@@ -53,11 +54,23 @@ export class Repository {
       // Advance the generation first so queued work from open tabs cannot restore history.
       await this.persist({ [REVISION_KEY]: revision + 1, [STATS_KEY]: emptyStats() });
       const data = await chrome.storage.local.get(null);
-      await chrome.storage.local.remove(Object.keys(data).filter(key => key.startsWith(VIDEO_PREFIX)));
+      await chrome.storage.local.remove(Object.keys(data).filter(key => key.startsWith(VIDEO_PREFIX) || key.startsWith(FILTERED_PREFIX)));
       return null;
     }
     if (message.type === 'filtered') {
-      if ((await getSettings()).enabled) await this.persist({ [STATS_KEY]: addFiltered(stats, message.videoIds) });
+      if ((await getSettings()).enabled) {
+        const day = message.day ?? localDay();
+        const key = FILTERED_PREFIX + day;
+        const legacyKey = FILTERED_PREFIX + stats.day;
+        const days = await chrome.storage.local.get([key, legacyKey]);
+        const stored = days[key];
+        // Seed legacy current-day data without double-counting after an upgrade.
+        const filteredIds = Array.isArray(stored) ? stored.filter(isVideoId) : stats.day === day ? stats.filteredIds : [];
+        const next = addFiltered({ ...stats, day, filteredIds }, message.videoIds, Date.now(), day);
+        const current = day >= stats.day ? next : { ...stats, filteredAllTime: next.filteredAllTime };
+        const legacy = stats.day !== day && !Array.isArray(days[legacyKey]) ? { [legacyKey]: stats.filteredIds } : {};
+        await this.persist({ ...legacy, [key]: next.filteredIds, [STATS_KEY]: current });
+      }
       return null;
     }
     if (message.type === 'touch') {

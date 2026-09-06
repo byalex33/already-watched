@@ -168,3 +168,5 @@ Before distributing through the Chrome Web Store, load `dist/` and perform this 
 9. Enable Hide playlists and Mixes. Check collection cards disappear and return when disabled. Play an individual video in a playlist and confirm playback and its playlist panel remain usable. Watching its first video must not mark the collection watched.
 
 Keep `src/youtube/selectors.ts` and the DOM fixtures together when adapting to a changed layout. Store packaging/publishing is separate from the unpacked build; no extension was installed into your Chrome profile or published automatically.
+
+Filtering batches retain the local date when each video was observed. Daily ID buckets remain in local storage until history is cleared, so retries and delayed tabs do not double-count earlier days or move observations into today's total. Storage use therefore grows with filtering activity as well as watched records.

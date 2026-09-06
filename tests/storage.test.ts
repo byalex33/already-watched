@@ -18,6 +18,30 @@ beforeEach(() => {
   repository = new Repository();
 });
 describe('single-writer repository', () => {
+  it('counts late observations on their original day and deduplicates across restarts', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 6, 0, 0, 1));
+    try {
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 0, filteredAllTime: 1 });
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-06' });
+      repository = new Repository();
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+      await repository.dispatch({ type: 'clear' });
+      expect(Object.keys(data).filter(key => key.startsWith('filtered:'))).toEqual([]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('preserves legacy daily deduplication when the first new-format batch is from another day', async () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 6, 0, 0, 1));
+    try {
+      data[STATS_KEY] = { day: '2026-09-05', filteredIds: [id], filteredAllTime: 1, totalMarked: 0 };
+      await repository.dispatch({ type: 'filtered', videoIds: ['abcdefghijk'], revision: 0, day: '2026-09-06' });
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+    } finally { vi.useRealTimers(); }
+  });
   it('serializes simultaneous tabs and persists only individual changed records', async () => {
     await Promise.all([
       repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 40]], revision: 0 }),
