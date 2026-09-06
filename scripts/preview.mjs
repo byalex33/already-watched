@@ -11,7 +11,7 @@ let watchedCount = 1248, filteredToday = 32, filteredAllTime = 864;
 window.chrome = {
   storage: { onChanged: { addListener:fn=>listeners.add(fn), removeListener:fn=>listeners.delete(fn) } },
   runtime: { sendMessage: async message => {
-    if(message.type==='settings') { settings = message.settings; listeners.forEach(fn=>fn()); }
+    if(message.type==='settings') { settings = { ...settings, ...message.settings }; listeners.forEach(fn=>fn()); }
     if(message.type==='clear') { watchedCount=0; filteredToday=0; filteredAllTime=0; listeners.forEach(fn=>fn()); }
     return { ok:true, data:{ settings, watchedCount, filteredToday, filteredAllTime, totalMarked:watchedCount, storageBytes:248512 } };
   } },
