@@ -18,6 +18,17 @@ beforeEach(() => {
   repository = new Repository();
 });
 describe('single-writer repository', () => {
+  it('preserves independent settings edits from concurrent clients', async () => {
+    await repository.dispatch({ type: 'settings', settings: { ...DEFAULT_SETTINGS, threshold: 85 } });
+    await Promise.all([
+      repository.dispatch({ type: 'settings', settings: { hideHomeShorts: true } }),
+      repository.dispatch({ type: 'settings', settings: { hidePlaylists: true } })
+    ]);
+    expect((await repository.dispatch({ type: 'summary' }) as Summary).settings).toMatchObject({
+      hideHomeShorts: true, hidePlaylists: true, threshold: 85
+    });
+  });
+
   it('serializes simultaneous tabs and persists only individual changed records', async () => {
     await Promise.all([
       repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 40]], revision: 0 }),
