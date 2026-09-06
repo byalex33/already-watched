@@ -16,7 +16,7 @@ Use Public distribution and disable automatic publication when submitting for re
 
 ## Rebuild the extension ZIP
 
-From the extension repository root, run `node scripts/package-store.mjs` after dependencies are installed. The script copies a fixed source snapshot, checks it for concurrent changes, runs `npm run check` in that snapshot, validates the build-file allowlist, and creates the extension-only ZIP. It also writes `release-manifest.json` with source and ZIP hashes and `release-validation.txt` with the validation output. Snapshots are retained in the OS temporary directory; no files are permanently deleted.
+From the extension repository root, run `node scripts/package-store.mjs` after dependencies are installed. Packaging also requires Python 3.8+ with its standard `zipfile` module. The command checks Python before creating any release files; if your executable is not called `python3`, set `ALREADY_WATCHED_PYTHON` to its path. The script copies a fixed source snapshot, checks it for concurrent changes, runs `npm run check` in that snapshot, validates the build-file allowlist, and creates the extension-only ZIP. It also writes `release-manifest.json` with source and ZIP hashes and `release-validation.txt` with the validation output. Snapshots are retained in the OS temporary directory; no files are permanently deleted.
 
 The release ZIP contains only the extension files from the validated snapshot. It excludes this directory, the privacy-page source, test fixtures, preview mocks, source maps, dependencies, and repository metadata. Do not zip the repository root or upload the listing-assets folder as the extension.
 
