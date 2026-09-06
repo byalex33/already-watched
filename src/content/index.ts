@@ -1,4 +1,5 @@
 import { REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { FilterObservations } from './filter-observations';
 import { localDay } from '../shared/date';
 import { errorMessage, request } from '../shared/messaging';
 import { meetsThreshold } from '../shared/progress';
@@ -39,8 +40,7 @@ async function start(): Promise<void> {
   catch (error) { chrome.storage.onChanged.removeListener(storageListener); throw error; }
   const cards = new Map<HTMLElement, VideoCard>();
   const byVideo = new Map<string, Set<HTMLElement>>();
-  const filtered = new Set<string>();
-  const seenToday = new Set<string>();
+  const filtered = new FilterObservations();
   const touches = new Set<string>();
   let day = localDay();
   let lastAutomaticError = 0;
@@ -73,7 +73,7 @@ async function start(): Promise<void> {
     const watched = isWatched(record, card.progress, card.shorts, state.settings);
     decorator.apply(card, watched, record, state.settings);
     if (card.element.closest(SELECTORS.sectionHidden)) return;
-    if (watched && !seenToday.has(card.videoId)) { filtered.add(card.videoId); seenToday.add(card.videoId); }
+    if (watched) filtered.observe(card.videoId);
     if (state.settings.enabled && record && Date.now() - record.lastSeen >= 3_600_000) touches.add(card.videoId);
   }
   function process(roots: Set<HTMLElement>): void {
@@ -106,7 +106,7 @@ async function start(): Promise<void> {
     }
     if (changes[REVISION_KEY]) {
       state.revision = Number(changes[REVISION_KEY].newValue) || 0;
-      tracker.reset(); filtered.clear(); touches.clear(); seenToday.clear();
+      tracker.reset(); filtered.clear(); touches.clear();
     }
     const changedIds = new Set<string>();
     for (const [key, change] of Object.entries(changes)) {
@@ -130,20 +130,21 @@ async function start(): Promise<void> {
     if (flushing) return;
     flushing = true;
     const revision = state.revision;
-    const ids = [...filtered].slice(0, 500); ids.forEach(id => filtered.delete(id));
+    const batch = filtered.take();
     const touchedIds = [...touches].slice(0, 500); touchedIds.forEach(id => touches.delete(id));
     try {
-      if (ids.length) await request({ type: 'filtered', videoIds: ids, revision });
+      // Stale batches belong to an invalidated generation and must not restore cleared statistics.
+      if (batch) await request({ type: 'filtered', ...batch, revision });
       if (touchedIds.length) await request({ type: 'touch', videoIds: touchedIds, revision });
     } catch (error) {
-      if (revision === state.revision) { ids.forEach(id => filtered.add(id)); touchedIds.forEach(id => touches.add(id)); }
+      if (revision === state.revision) { if (batch) filtered.restore(batch); touchedIds.forEach(id => touches.add(id)); }
       onAutomaticError(error);
     } finally { flushing = false; }
   }
   const counters = setInterval(() => {
     if (day !== localDay()) {
-      // Flush yesterday's pending observations before counting a new local day.
-      filtered.clear(); seenToday.clear(); day = localDay(); cards.forEach(decorate);
+      // Keep yesterday's pending batches; rendered cards can count on the new day.
+      day = localDay(); cards.forEach(decorate);
     }
     void flushCounters();
   }, 5000);
