@@ -99,6 +99,6 @@ export function App() {
       {confirmClear && <div className="confirmation" role="alert"><p>Clear saved history, manual changes, and statistics? This cannot be undone. Videos may still be marked watched using YouTube progress bars.</p><div><button className="danger" disabled={busy} onClick={() => { void clearHistory(); }}>Clear history</button><button disabled={busy} onClick={() => setConfirmClear(false)}>Keep history</button></div></div>}
       {status && <p className="notice" role="status">{status}</p>}{(error || summary.error) && <p className="error" role="alert">{error || summary.error}</p>}
     </section>
-    <footer><svg aria-hidden="true" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="2" /><path d="M5 7V5a3 3 0 0 1 6 0v2" /></svg>History and settings are saved on this device.</footer>
+    <footer><p className="privacy-note"><svg aria-hidden="true" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="2" /><path d="M5 7V5a3 3 0 0 1 6 0v2" /></svg>History and settings are saved on this device.</p><p>Already Watched is open source. <a href="https://github.com/byalex33/already-watched" target="_blank" rel="noreferrer">Help contribute on GitHub ↗</a></p></footer>
   </main>;
 }
