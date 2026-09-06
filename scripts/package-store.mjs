@@ -12,7 +12,7 @@ if (pythonCheck.error || pythonCheck.status !== 0) {
   throw new Error('Store packaging requires Python 3.8+ with zipfile. Install python3 or set ALREADY_WATCHED_PYTHON to your Python executable path. No release files were changed.');
 }
 const snapshot = await mkdtemp(join(tmpdir(), 'already-watched-release-'));
-const entries = ['src', 'public', 'tests', 'scripts/build.mjs', 'package.json', 'package-lock.json', 'manifest.json', 'tsconfig.json', 'vitest.config.ts'];
+const entries = ['src', 'public', 'tests', 'scripts/build.mjs', 'package.json', 'package-lock.json', 'manifest.json', 'LICENSE', 'tsconfig.json', 'vitest.config.ts'];
 async function filesIn(path, prefix='') {
   const files=[];
   for(const e of await readdir(path,{withFileTypes:true})) {
@@ -37,7 +37,7 @@ const result=spawnSync('npm',['run','check'],{cwd:snapshot,encoding:'utf8',shell
 process.stdout.write(result.stdout??'');process.stderr.write(result.stderr??'');
 if(result.status!==0) throw new Error('Snapshot validation failed; no release ZIP created.');
 const manifest=JSON.parse(await readFile(join(snapshot,'dist/manifest.json'),'utf8'));
-const expected=['background.js','content.js','content.css','popup.html','popup.js','popup.css','manifest.json',...new Set(Object.values(manifest.icons))].sort();
+const expected=['LICENSE','background.js','content.js','content.css','popup.html','popup.js','popup.css','manifest.json',...new Set(Object.values(manifest.icons))].sort();
 const actual=await filesIn(join(snapshot,'dist'));
 if(JSON.stringify(expected)!==JSON.stringify(actual)) throw new Error(`Unexpected build contents: ${JSON.stringify(actual)}`);
 if(manifest.manifest_version!==3||manifest.description.length>132) throw new Error('Invalid store metadata');
