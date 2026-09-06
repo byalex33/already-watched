@@ -1,2 +1,3 @@
 import { defineConfig } from 'vitest/config';
-export default defineConfig({ test: { environment: 'jsdom', environmentOptions: { jsdom: { url: 'https://www.youtube.com/' } }, clearMocks: true } });
+// Pin the worker timezone so calendar regressions exercise real DST transitions.
+export default defineConfig({ test: { env: { TZ: 'Europe/London' }, environment: 'jsdom', environmentOptions: { jsdom: { url: 'https://www.youtube.com/' } }, clearMocks: true } });

@@ -2,6 +2,8 @@
 
 The public privacy policy is at https://already-watched-privacy.alexcbaldry.chatgpt.site.
 
+The listing describes the published v1.0.0 extension. Minimum-view and title-word filters are not included in that release. Do not advertise work-in-progress features until a version containing them has been released.
+
 ## Upload materials
 
 - `already-watched-1.0.0.zip`: extension package, generated locally and intentionally excluded from Git.
