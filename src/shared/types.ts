@@ -51,6 +51,6 @@ export type Request =
   | { type: 'progress'; videoId: string; title?: string; duration: number; segments: Segment[]; revision: number }
   | { type: 'import'; videos: { videoId: string; title?: string; progress: number }[]; revision: number }
   | { type: 'touch'; videoIds: string[]; revision: number }
-  | { type: 'filtered'; videoIds: string[]; revision: number }
+  | { type: 'filtered'; videoIds: string[]; revision: number; day?: string }
   | { type: 'clear' };
 export type Reply<T> = { ok: true; data: T } | { ok: false; error: string };

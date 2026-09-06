@@ -130,14 +130,16 @@ The service worker serializes mutations from all tabs through one queue; data al
 
 - A tab takes one initial snapshot, then updates only changed records from `chrome.storage.onChanged`.
 - Playback is sampled once a second, written about every 15 seconds, on pause/end/navigation, and immediately when qualifying. Individual video keys avoid rewriting the entire history. Intervals merge and are capped at 128 per record; extreme fragmentation discards the shortest intervals conservatively.
-- Recommendation `lastSeen` writes happen at most hourly per record. Filter/touch messages batch every five seconds, capped at 500 IDs. Daily deduplication persists only the current day's IDs plus all-time totals.
+- Recommendation `lastSeen` writes happen at most hourly per record. Filter/touch messages batch every five seconds, capped at 500 IDs. Daily ID buckets remain in local storage until history is cleared, alongside all-time totals. Batches retain the local observation date so retries and delayed tabs do not double-count earlier days or move observations into today's total. Storage use grows with filtering activity as well as watched records.
 - New/changed subtrees are queued and coalesced. Full discovery runs on initialization and navigation, not on every mutation. Attribute observation excludes classes and extension-owned text; decorators do not create observer feedback loops. Removed cards are pruned, and record updates address cards through a video-ID index.
 - A revision token invalidates stale automatic messages when history is reset or a video is manually marked unwatched. Already-running tabs cannot undo a reset with an old progress batch. This conservatively discards pending unsaved segments in other tabs too.
 - No automatic history eviction: quota failures leave existing data intact and surface an error. Chrome's default local-storage quota is 10 MB; the UI shows usage. This supports thousands of typical records, with capacity depending on title lengths and interval fragmentation. No `unlimitedStorage` permission is requested. See [Chrome storage documentation](https://developer.chrome.com/docs/extensions/reference/api/storage).
 
+History clearing uses a temporary numeric reset marker in `chrome.storage.session`, which has a separate quota and survives service-worker restarts. The worker completes any pending reset before handling more messages, frees local record space, and then persists the new history revision. Settings are preserved. The marker contains no video data and is removed after completion.
+
 ## Privacy and permissions
 
-Everything is stored in **`chrome.storage.local` on this Chrome profile**. No analytics, backend, YouTube API, Google account access, browsing-history permission, cookies permission, or Chrome sync. The extension makes no direct network requests. In Hide + refill mode it can trigger YouTube's own recommendation loading, which causes YouTube to make its usual requests to YouTube. No additional permissions or third-party services are used.
+History, settings, and statistics are stored in **`chrome.storage.local` on this Chrome profile**. Clearing history temporarily uses a numeric reset marker in `chrome.storage.session`. No analytics, backend, YouTube API, Google account access, browsing-history permission, cookies permission, or Chrome sync. The extension makes no direct network requests. In Hide + refill mode it can trigger YouTube's own recommendation loading, which causes YouTube to make its usual requests to YouTube. No additional permissions or third-party services are used.
 
 - `storage`: persist settings, video IDs/titles, observed playback segments, dates, and statistics.
 - `contextMenus`: manual watched/unwatched commands.

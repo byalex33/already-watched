@@ -29,7 +29,7 @@ describe('reference compatibility regressions', () => {
   it('keeps new hints transient, preserves history priority and suppresses explicit imports after manual unwatched', async () => {
     const data: Record<string, unknown> = {};
     const set = vi.fn(async (values: Record<string, unknown>) => { Object.assign(data, structuredClone(values)); });
-    vi.stubGlobal('chrome', { storage: { local: {
+    vi.stubGlobal('chrome', { storage: { session: { get: vi.fn(async () => ({})) }, local: {
       get: vi.fn(async (keys: string | string[]) => Object.fromEntries((typeof keys === 'string' ? [keys] : keys).map(key => [key, data[key]]))), set
     } } });
     const card = detectCard(fixture('search-ytw'))!;

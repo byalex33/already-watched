@@ -1,9 +1,12 @@
-import { ERROR_KEY, REVISION_KEY, SETTINGS_KEY, STATS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { FILTERED_PREFIX, ERROR_KEY, REVISION_KEY, SETTINGS_KEY, STATS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { isVideoId } from '../youtube/video-id';
 import { localDay } from '../shared/date';
 import type { Request, Snapshot, Stats, Summary, VideoRecord } from '../shared/types';
 import { getSettings, normalizeSettings } from '../storage/settings-store';
 import { addFiltered, emptyStats, normalizeStats } from '../storage/stats-store';
 import { getRecord, playbackRecord, readRecords, videoKey } from '../storage/watched-store';
+
+const PENDING_RESET_KEY = 'pendingHistoryReset';
 
 // The service worker is the only writer. A promise queue serializes read/modify/write
 // operations across tabs, including resets, without relying on worker lifetime.
@@ -25,16 +28,29 @@ export class Repository {
   private async commitRecord(previous: VideoRecord | undefined, next: VideoRecord, stats: Stats, extra: Record<string, unknown> = {}): Promise<void> {
     await this.persist({ ...extra, [videoKey(next.videoId)]: next, ...(next.watched && !previous?.watched ? { [STATS_KEY]: { ...stats, totalMarked: stats.totalMarked + 1 } } : {}) });
   }
+  /** Complete a reset before accepting messages, including after a worker restart. */
+  private async finishReset(): Promise<void> {
+    const pending = await chrome.storage.session.get(PENDING_RESET_KEY);
+    const revision: unknown = pending[PENDING_RESET_KEY];
+    if (typeof revision !== 'number' || !Number.isSafeInteger(revision) || revision < 1) return;
+    const data = await chrome.storage.local.get(null);
+    await chrome.storage.local.remove(Object.keys(data).filter(key => key.startsWith(VIDEO_PREFIX) || key.startsWith(FILTERED_PREFIX) || key === STATS_KEY || key === ERROR_KEY));
+    await this.persist({ [REVISION_KEY]: revision, [STATS_KEY]: emptyStats() });
+    await chrome.storage.session.remove(PENDING_RESET_KEY);
+  }
   private async handle(message: Request): Promise<unknown> {
+    await this.finishReset();
     if (message.type === 'snapshot' || message.type === 'summary') {
       const data = await chrome.storage.local.get(null);
       const records = readRecords(data);
       const settings = normalizeSettings(data[SETTINGS_KEY]);
       if (message.type === 'snapshot') return { settings, records, revision: Number(data[REVISION_KEY]) || 0 } satisfies Snapshot;
       const stats = normalizeStats(data[STATS_KEY]);
+      const today = localDay();
+      const dailyIds = data[FILTERED_PREFIX + today];
       return {
         settings, watchedCount: Object.values(records).filter(record => record.watched).length,
-        filteredToday: stats.day === localDay() ? stats.filteredIds.length : 0,
+        filteredToday: Array.isArray(dailyIds) ? new Set(dailyIds.filter(isVideoId)).size : stats.day === today ? stats.filteredIds.length : 0,
         filteredAllTime: stats.filteredAllTime, totalMarked: stats.totalMarked,
         storageBytes: await chrome.storage.local.getBytesInUse(null),
         error: typeof data[ERROR_KEY] === 'string' ? data[ERROR_KEY] : undefined
@@ -50,14 +66,27 @@ export class Repository {
     if ('revision' in message && message.revision !== revision) return { stale: true };
     const stats = normalizeStats(meta[STATS_KEY]);
     if (message.type === 'clear') {
-      // Advance the generation first so queued work from open tabs cannot restore history.
-      await this.persist({ [REVISION_KEY]: revision + 1, [STATS_KEY]: emptyStats() });
-      const data = await chrome.storage.local.get(null);
-      await chrome.storage.local.remove(Object.keys(data).filter(key => key.startsWith(VIDEO_PREFIX)));
+      if (!Number.isSafeInteger(revision + 1) || revision + 1 < 1) throw new Error('History revision limit reached');
+      // Session storage has a separate quota and survives worker restarts. Record
+      // intent there before freeing local space; recovery rejects old tab writes.
+      await chrome.storage.session.set({ [PENDING_RESET_KEY]: revision + 1 });
+      await this.finishReset();
       return null;
     }
     if (message.type === 'filtered') {
-      if ((await getSettings()).enabled) await this.persist({ [STATS_KEY]: addFiltered(stats, message.videoIds) });
+      if ((await getSettings()).enabled) {
+        const day = message.day ?? localDay();
+        const key = FILTERED_PREFIX + day;
+        const legacyKey = FILTERED_PREFIX + stats.day;
+        const days = await chrome.storage.local.get([key, legacyKey]);
+        const stored = days[key];
+        // Seed legacy current-day data without double-counting after an upgrade.
+        const filteredIds = Array.isArray(stored) ? stored.filter(isVideoId) : stats.day === day ? stats.filteredIds : [];
+        const next = addFiltered({ ...stats, day, filteredIds }, message.videoIds, Date.now(), day);
+        const current = day >= stats.day ? next : { ...stats, filteredAllTime: next.filteredAllTime };
+        const legacy = stats.day !== day && !Array.isArray(days[legacyKey]) ? { [legacyKey]: stats.filteredIds } : {};
+        await this.persist({ ...legacy, [key]: next.filteredIds, [STATS_KEY]: current });
+      }
       return null;
     }
     if (message.type === 'touch') {
