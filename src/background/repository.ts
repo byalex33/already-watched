@@ -46,9 +46,11 @@ export class Repository {
       const settings = normalizeSettings(data[SETTINGS_KEY]);
       if (message.type === 'snapshot') return { settings, records, revision: Number(data[REVISION_KEY]) || 0 } satisfies Snapshot;
       const stats = normalizeStats(data[STATS_KEY]);
+      const today = localDay();
+      const dailyIds = data[FILTERED_PREFIX + today];
       return {
         settings, watchedCount: Object.values(records).filter(record => record.watched).length,
-        filteredToday: stats.day === localDay() ? stats.filteredIds.length : 0,
+        filteredToday: Array.isArray(dailyIds) ? new Set(dailyIds.filter(isVideoId)).size : stats.day === today ? stats.filteredIds.length : 0,
         filteredAllTime: stats.filteredAllTime, totalMarked: stats.totalMarked,
         storageBytes: await chrome.storage.local.getBytesInUse(null),
         error: typeof data[ERROR_KEY] === 'string' ? data[ERROR_KEY] : undefined

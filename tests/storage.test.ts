@@ -40,6 +40,19 @@ describe('single-writer repository', () => {
     } finally { vi.useRealTimers(); }
   });
 
+  it('reports today from its daily bucket when the local date moves backward', async () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 6, 0, 5));
+    try {
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0 });
+      vi.setSystemTime(new Date(2026, 8, 5, 23, 5));
+      await repository.dispatch({ type: 'filtered', videoIds: ['abcdefghijk'], revision: 0 });
+      repository = new Repository();
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+      vi.setSystemTime(new Date(2026, 8, 6, 0, 5));
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+    } finally { vi.useRealTimers(); }
+  });
+
   it('preserves legacy daily deduplication when the first new-format batch is from another day', async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 6, 0, 0, 1));
     try {
