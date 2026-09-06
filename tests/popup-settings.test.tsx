@@ -17,6 +17,7 @@ it('keeps edits from two Options windows before their storage refreshes arrive',
   const data: Record<string, unknown> = {};
   const repository = new Repository();
   vi.stubGlobal('chrome', { storage: {
+    session: { get: async () => ({}) },
     // The real popup debounces these notifications. Both windows can edit first.
     onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
     local: {
