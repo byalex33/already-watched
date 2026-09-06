@@ -31,7 +31,7 @@ MARK OR UNDO IN A MOMENT
 Mark a video watched or unwatched using thumbnail controls, supported YouTube three-dot menus, or Chrome's right-click menu. Scan the currently rendered YouTube page to import qualifying progress indicators without fetching your Google account's watch-history database.
 
 TAILOR YOUR FEED
-Optional filters hide playlists and Mixes, Shorts on Home, and supported Playables and topic-suggestion sections. You can also filter videos by a minimum displayed view count or words and phrases in their titles. These options are off by default. View-count filtering uses supported English counts; unavailable counts stay visible.
+Optional filters hide playlists and Mixes, Shorts on Home, and supported Playables and topic-suggestion sections. These options are off by default.
 
 YOUR HISTORY STAYS LOCAL
 Video IDs, titles, playback progress, timestamps, settings, and filtering statistics stay in this Chrome profile. No extension account, analytics service, cloud sync, or developer server receives your extension data. Clear watched history in the popup or Options page, or uninstall to remove local extension data.
@@ -63,7 +63,7 @@ No extension login, payment, API key, or test credentials are required. Open des
 3. Switch to Hide videos and confirm a manually watched card disappears. Switch back to restore it.
 4. Set a low watched threshold, play a fresh finite video, and confirm only observed playback contributes. Skipping ahead should not count the skipped section.
 5. On a page with qualifying YouTube progress bars, use the popup scan command. It scans the cards already rendered on that page.
-6. Toggle optional feed filters. Disable each to restore matching cards or sections. Unknown view counts are not removed by the minimum-views filter.
+6. Toggle optional feed filters. Disable each to restore matching cards or sections.
 7. Select Hide and load more on a supported sparse feed containing watched cards. Refilling is best effort, capped at five extension-initiated loads per page visit, and stops after two attempts with no new video IDs.
 8. Clear watched history using the confirmation inside the popup. Settings remain; history and statistics are reset. YouTube progress hints may still appear while enabled.
 

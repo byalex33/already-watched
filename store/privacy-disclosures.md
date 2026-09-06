@@ -16,7 +16,7 @@ The contextMenus permission adds Mark as watched and Mark as unwatched commands 
 
 ## Host permission justification
 
-Access to https://www.youtube.com/* and https://youtube.com/* lets the content script identify video links, titles, displayed view counts, progress indicators, and supported players; observe playback; and apply badges, dimming, and selected feed filters. It also lets the popup identify the active YouTube tab and send the user's scan command to its content script. Access is limited to desktop YouTube; no all-sites permission or Chrome history permission is requested.
+Access to https://www.youtube.com/* and https://youtube.com/* lets the content script identify video links, titles, progress indicators, and supported players; observe playback; and apply badges, dimming, and selected feed filters. It also lets the popup identify the active YouTube tab and send the user's scan command to its content script. Access is limited to desktop YouTube; no all-sites permission or Chrome history permission is requested.
 
 Use the same justification if the dashboard presents the two host patterns separately.
 
@@ -36,7 +36,7 @@ Select these categories where the dashboard uses its standard data-type checkbox
 | --- | --- | --- |
 | Web history | Yes | YouTube video IDs, available titles, watched status, and watch/import/last-seen dates form local video activity records. No Chrome browsing-history API access is used. |
 | User activity | Yes | The extension observes player playback segments, progress, and manual watched/unwatched actions for its visible features and statistics. |
-| Website content | Yes | It reads video titles, video links, displayed view counts, progress indicators, and supported YouTube page elements to apply filtering and marking. |
+| Website content | Yes | It reads video titles, video links, progress indicators, and supported YouTube page elements to apply filtering and marking. |
 | Personally identifiable information | No | The extension does not collect names, email addresses, phone numbers, or account identifiers. Support email is separately described in the policy. |
 | Health information | No | No health-information feature or intentional collection. |
 | Financial and payment information | No | No extension billing, payment collection, or card access. |
