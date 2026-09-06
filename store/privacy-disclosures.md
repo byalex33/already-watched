@@ -24,7 +24,7 @@ Use the same justification if the dashboard presents the two host patterns separ
 
 Select: No, I am not using remote code.
 
-Explanation if requested: All JavaScript, CSS, React code, and icons are bundled with the extension. No remotely hosted scripts, executable code downloads, eval-based code loading, CDN dependencies, or remote WebAssembly are used. Hide + refill invokes YouTube's existing page controls; it does not fetch or execute remote extension code.
+Explanation if requested: All JavaScript, CSS, React code, and icons are bundled with the extension. No remotely hosted scripts, executable code downloads, eval-based code loading, CDN dependencies, or remote WebAssembly are used. The refill option invokes YouTube's existing page controls; it does not fetch or execute remote extension code.
 
 ## Data types
 

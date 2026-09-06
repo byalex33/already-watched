@@ -26,7 +26,7 @@ If `manifest.version` has already been uploaded to the store, increase it before
 
 Run `node store/preview.mjs` from the repository root after building the extension. The local-only routes `/settings`, `/feed`, and `/promo` render the artwork. Capture the first two at 1280×800 and the promotional tile at 440×280. Screenshots were exported as JPEG; the icon remains PNG. No personal YouTube feed, history, account details, third-party thumbnails, or generated representations of real YouTube creators are used.
 
-The preview API is not an extension storage backend. Its values are synthetic, and it is never bundled into the upload package. Settings and badges are rendered from the actual application/production implementation. Update the screenshots if the shipped interface changes materially.
+Use `node store/preview.mjs --release` after packaging to render the popup from the fixed, tested release snapshot even if the workspace is being edited. The preview API is not an extension storage backend. Its values are synthetic, and it is never bundled into the upload package. Settings and badges are rendered from the actual application/production implementation. Update the screenshots if the shipped interface changes materially.
 
 ## Privacy-page source
 
