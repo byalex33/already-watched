@@ -1,4 +1,3 @@
-import { localDay } from '../shared/date';
 import { isVideoId } from '../youtube/video-id';
 import type { Request } from '../shared/types';
 export function validRequest(input: unknown): input is Request {
@@ -7,7 +6,8 @@ export function validRequest(input: unknown): input is Request {
   const title = (x: unknown): boolean => x === undefined || (typeof x === 'string' && x.length <= 500);
   const observationDay = (): boolean => {
     if (v.day === undefined) return true;
-    if (typeof v.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.day) || v.day > localDay()) return false;
+    // A retained observation may be ahead of the clock after a local-date rollback.
+    if (typeof v.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.day)) return false;
     const date = new Date(v.day + 'T12:00:00Z');
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === v.day;
   };

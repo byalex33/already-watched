@@ -31,9 +31,19 @@ it('batches without losing overflow', () => {
   expect(observations.take(1)?.videoIds).toEqual(['abcdefghijk']);
 });
 it('validates observation dates without throwing for invalid calendar input', () => {
-  for (const day of ['2026-02-30', '2026-99-99', '2026-09-07', '../bad', null]) {
+  for (const day of ['2026-02-30', '2026-99-99', '../bad', null]) {
     expect(validRequest({ type: 'filtered', videoIds: [id], revision: 0, day })).toBe(false);
   }
   expect(validRequest({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' })).toBe(true);
   expect(validRequest({ type: 'filtered', videoIds: [id], revision: 0 })).toBe(true);
+});
+
+it('accepts a retained batch when the local date rolls back before it is sent', () => {
+  vi.setSystemTime(new Date(2026, 8, 6, 0, 0, 4));
+  const observations = new FilterObservations();
+  observations.observe(id);
+  vi.setSystemTime(new Date(2026, 8, 5, 23, 59, 59));
+  const batch = observations.take()!;
+  expect(batch.day).toBe('2026-09-06');
+  expect(validRequest({ type: 'filtered', ...batch, revision: 0 })).toBe(true);
 });
