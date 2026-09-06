@@ -46,7 +46,7 @@ export interface Summary {
 export type Request =
   | { type: 'snapshot' }
   | { type: 'summary' }
-  | { type: 'settings'; settings: Settings }
+  | { type: 'settings'; settings: Partial<Settings> }
   | { type: 'mark'; videoId: string; watched: boolean; title?: string }
   | { type: 'progress'; videoId: string; title?: string; duration: number; segments: Segment[]; revision: number }
   | { type: 'import'; videos: { videoId: string; title?: string; progress: number }[]; revision: number }

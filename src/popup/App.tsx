@@ -45,7 +45,7 @@ export function App() {
     const next = { ...settingsRef.current, ...patch };
     settingsRef.current = next; setSettings(next); setError(''); setSaving(true); pendingSave.current = true;
     const current = ++sequence.current;
-    try { await request({ type: 'settings', settings: next }); }
+    try { await request({ type: 'settings', settings: patch }); }
     catch (e) { setError(errorMessage(e)); }
     finally {
       if (current === sequence.current) { pendingSave.current = false; setSaving(false); await refresh().catch(e => setError(errorMessage(e))); }

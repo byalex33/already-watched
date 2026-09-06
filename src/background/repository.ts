@@ -57,7 +57,7 @@ export class Repository {
       } satisfies Summary;
     }
     if (message.type === 'settings') {
-      const settings = normalizeSettings(message.settings);
+      const settings = normalizeSettings({ ...await getSettings(), ...message.settings });
       await this.persist({ [SETTINGS_KEY]: settings });
       return settings;
     }
