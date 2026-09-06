@@ -135,9 +135,11 @@ The service worker serializes mutations from all tabs through one queue; data al
 - A revision token invalidates stale automatic messages when history is reset or a video is manually marked unwatched. Already-running tabs cannot undo a reset with an old progress batch. This conservatively discards pending unsaved segments in other tabs too.
 - No automatic history eviction: quota failures leave existing data intact and surface an error. Chrome's default local-storage quota is 10 MB; the UI shows usage. This supports thousands of typical records, with capacity depending on title lengths and interval fragmentation. No `unlimitedStorage` permission is requested. See [Chrome storage documentation](https://developer.chrome.com/docs/extensions/reference/api/storage).
 
+History clearing uses a temporary numeric reset marker in `chrome.storage.session`, which has a separate quota and survives service-worker restarts. The worker completes any pending reset before handling more messages, frees local record space, and then persists the new history revision. Settings are preserved. The marker contains no video data and is removed after completion.
+
 ## Privacy and permissions
 
-Everything is stored in **`chrome.storage.local` on this Chrome profile**. No analytics, backend, YouTube API, Google account access, browsing-history permission, cookies permission, or Chrome sync. The extension makes no direct network requests. In Hide + refill mode it can trigger YouTube's own recommendation loading, which causes YouTube to make its usual requests to YouTube. No additional permissions or third-party services are used.
+History, settings, and statistics are stored in **`chrome.storage.local` on this Chrome profile**. Clearing history temporarily uses a numeric reset marker in `chrome.storage.session`. No analytics, backend, YouTube API, Google account access, browsing-history permission, cookies permission, or Chrome sync. The extension makes no direct network requests. In Hide + refill mode it can trigger YouTube's own recommendation loading, which causes YouTube to make its usual requests to YouTube. No additional permissions or third-party services are used.
 
 - `storage`: persist settings, video IDs/titles, observed playback segments, dates, and statistics.
 - `contextMenus`: manual watched/unwatched commands.
@@ -168,5 +170,3 @@ Before distributing through the Chrome Web Store, load `dist/` and perform this 
 9. Enable Hide playlists and Mixes. Check collection cards disappear and return when disabled. Play an individual video in a playlist and confirm playback and its playlist panel remain usable. Watching its first video must not mark the collection watched.
 
 Keep `src/youtube/selectors.ts` and the DOM fixtures together when adapting to a changed layout. Store packaging/publishing is separate from the unpacked build; no extension was installed into your Chrome profile or published automatically.
-
-History clearing uses a temporary numeric reset marker in `chrome.storage.session`, which has a separate quota and survives service-worker restarts. The worker completes any pending reset before handling more messages, frees local record space, and then persists the new history revision. Settings are preserved. The marker contains no video data and is removed after completion.
