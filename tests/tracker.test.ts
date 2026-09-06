@@ -52,6 +52,16 @@ describe('player tracking', () => {
     await vi.advanceTimersByTimeAsync(15_000);
     expect(progressMessages().flatMap(message => message.segments)).toEqual([[0, 5]]);
   });
+  it('cancels retries after stop even when a save rejects during teardown', async () => {
+    let reject!: (error: Error) => void;
+    vi.mocked(chrome.runtime.sendMessage).mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
+    tracker = new VideoTracker(() => state, vi.fn());
+    await play(15); tracker.stop();
+    reject(new Error('Storage unavailable'));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it('bounds retries when saving a departed session keeps failing', async () => {
     vi.mocked(chrome.runtime.sendMessage).mockRejectedValue(new Error('Storage is full'));
     const onError = vi.fn();

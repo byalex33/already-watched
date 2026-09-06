@@ -23,6 +23,7 @@ export class VideoTracker {
   private session?: Session;
   private retired = new Set<Session>();
   private pausedForNavigation = false;
+  private stopped = false;
   private timer: ReturnType<typeof setInterval>;
   private readonly interrupt = (): void => { if (this.session) this.session.last = undefined; };
   private readonly save = (): void => { this.tick(); void this.flush(); };
@@ -58,6 +59,7 @@ export class VideoTracker {
     this.session = undefined;
   }
   private tick(): void {
+    if (this.stopped) return;
     const snapshot = this.snapshot();
     const route = currentPlaybackId(location.href);
     if (this.pausedForNavigation || !snapshot.settings.enabled || !route || (route.shorts && !snapshot.settings.applyToShorts)) {
@@ -130,14 +132,17 @@ export class VideoTracker {
     }
   }
   private retryRetired(session: Session): void {
-    if (!this.retired.has(session) || session.retryTimer) return;
+    if (this.stopped || !this.retired.has(session) || session.retryTimer) return;
     session.retryTimer = setTimeout(() => {
       session.retryTimer = undefined;
       void this.flush(session);
     }, Math.max(0, session.retryAfter - Date.now()));
   }
   stop(): void {
+    if (this.stopped) return;
+    this.stopped = true;
     this.detach(true); clearInterval(this.timer);
+    for (const session of this.retired) this.discard(session);
     window.removeEventListener('pagehide', this.save);
     document.removeEventListener('visibilitychange', this.save);
   }
