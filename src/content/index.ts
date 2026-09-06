@@ -133,6 +133,7 @@ async function start(): Promise<void> {
     const batch = filtered.take();
     const touchedIds = [...touches].slice(0, 500); touchedIds.forEach(id => touches.delete(id));
     try {
+      // Stale batches belong to an invalidated generation and must not restore cleared statistics.
       if (batch) await request({ type: 'filtered', ...batch, revision });
       if (touchedIds.length) await request({ type: 'touch', videoIds: touchedIds, revision });
     } catch (error) {

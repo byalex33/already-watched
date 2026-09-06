@@ -5,12 +5,17 @@ import type { Summary, VideoRecord } from '../src/shared/types';
 import { videoKey } from '../src/storage/watched-store';
 const id = 'dQw4w9WgXcQ';
 let data: Record<string, unknown>;
+let sessionData: Record<string, unknown>;
 let set: ReturnType<typeof vi.fn>;
 let repository: Repository;
 beforeEach(() => {
-  data = {};
+  data = {}; sessionData = {};
   set = vi.fn(async (values: Record<string, unknown>) => { Object.assign(data, structuredClone(values)); });
-  vi.stubGlobal('chrome', { storage: { local: {
+  vi.stubGlobal('chrome', { storage: { session: {
+    get: vi.fn(async (key: string) => structuredClone(key in sessionData ? { [key]: sessionData[key] } : {})),
+    set: vi.fn(async (values: Record<string, unknown>) => { Object.assign(sessionData, structuredClone(values)); }),
+    remove: vi.fn(async (key: string) => { delete sessionData[key]; })
+  }, local: {
     get: vi.fn(async (keys: string | string[] | null) => structuredClone(keys === null ? data : Object.fromEntries((typeof keys === 'string' ? [keys] : keys).filter(key => key in data).map(key => [key, data[key]])))),
     set, remove: vi.fn(async (keys: string[]) => { keys.forEach(key => { delete data[key]; }); }),
     getBytesInUse: vi.fn(async () => JSON.stringify(data).length)
@@ -30,6 +35,8 @@ describe('single-writer repository', () => {
       expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
       await repository.dispatch({ type: 'clear' });
       expect(Object.keys(data).filter(key => key.startsWith('filtered:'))).toEqual([]);
+      expect(await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' })).toEqual({ stale: true });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 0, filteredAllTime: 0 });
     } finally { vi.useRealTimers(); }
   });
 
@@ -42,6 +49,32 @@ describe('single-writer repository', () => {
       expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
     } finally { vi.useRealTimers(); }
   });
+
+  it('clears a full profile before its first history revision has been stored', async () => {
+    data.settings = { ...DEFAULT_SETTINGS, threshold: 85 };
+    data[videoKey(id)] = { videoId: id, watched: false, progress: .5, source: 'playback', lastSeen: Date.now(), title: 'x'.repeat(1000) };
+    const bytes = (values: Record<string, unknown>): number => Object.entries(values).reduce((sum, [key, value]) => sum + key.length + JSON.stringify(value).length, 0);
+    const quota = bytes(data);
+    set.mockImplementation(async values => {
+      if (bytes({ ...data, ...values }) > quota) throw new Error('QUOTA_BYTES exceeded');
+      Object.assign(data, structuredClone(values));
+    });
+    await repository.dispatch({ type: 'clear' });
+    expect(data[videoKey(id)]).toBeUndefined();
+    expect(data[REVISION_KEY]).toBe(1);
+    expect((await repository.dispatch({ type: 'summary' }) as Summary).settings.threshold).toBe(85);
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
+  });
+  it('finishes an interrupted clear after the worker restarts before accepting stale playback', async () => {
+    await repository.dispatch({ type: 'mark', videoId: id, watched: true });
+    vi.mocked(chrome.storage.local.remove).mockRejectedValueOnce(new Error('Interrupted'));
+    await expect(repository.dispatch({ type: 'clear' })).rejects.toThrow('Interrupted');
+    repository = new Repository();
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
+    expect(data[videoKey(id)]).toBeUndefined();
+    expect(sessionData).toEqual({});
+  });
+
   it('serializes simultaneous tabs and persists only individual changed records', async () => {
     await Promise.all([
       repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 40]], revision: 0 }),
