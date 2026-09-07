@@ -9,6 +9,8 @@ export interface Settings {
   hidePromotionalSections: boolean;
   hideHomeShorts: boolean;
   hidePlaylists: boolean;
+  minimumViews: number;
+  blockedTitleTerms: string[];
 }
 export type Segment = [number, number];
 export interface VideoRecord {
