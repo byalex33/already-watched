@@ -21,6 +21,7 @@ import { VideoMenu } from './video-menu';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 function showError(error: unknown): void {
+  if (excludedPage()) return;
   let toast = document.querySelector<HTMLElement>('.aw-toast');
   if (!toast) { toast = document.createElement('div'); toast.className = 'aw-toast'; toast.setAttribute('role', 'status'); document.body.append(toast); }
   toast.textContent = `Already Watched: ${errorMessage(error)}`;
@@ -28,7 +29,7 @@ function showError(error: unknown): void {
   toastTimer = setTimeout(() => toast?.remove(), 6000);
 }
 
-async function start(): Promise<void> {
+async function start(isCurrent: () => boolean): Promise<(() => void) | undefined> {
   // Buffer events during initialization so a concurrent tab write cannot be lost
   // between the initial snapshot and installing the change listener.
   const buffered: Record<string, chrome.storage.StorageChange>[] = [];
@@ -38,6 +39,7 @@ async function start(): Promise<void> {
   let state: Snapshot;
   try { state = await request<Snapshot>({ type: 'snapshot' }); }
   catch (error) { chrome.storage.onChanged.removeListener(storageListener); throw error; }
+  if (!isCurrent()) { chrome.storage.onChanged.removeListener(storageListener); return; }
   const cards = new Map<HTMLElement, VideoCard>();
   const byVideo = new Map<string, Set<HTMLElement>>();
   const filtered = new FilterObservations();
@@ -175,7 +177,7 @@ async function start(): Promise<void> {
     return true;
   };
   chrome.runtime.onMessage.addListener(messageListener);
-  window.addEventListener('pagehide', () => {
+  return () => {
     void flushCounters(); observer.stop(); tracker.stop(); refiller.stop(); stopNavigation(); clearInterval(counters);
     videoMenu.stop();
     promotionalFilter.clear();
@@ -186,7 +188,41 @@ async function start(): Promise<void> {
     chrome.runtime.onMessage.removeListener(messageListener);
     document.removeEventListener('visibilitychange', onVisibility);
     for (const element of cards.keys()) unregister(element);
-  }, { once: true });
+  };
 }
-window.addEventListener('pageshow', event => { if (event.persisted) void start().catch(showError); });
-void start().catch(showError);
+
+function excludedPage(): boolean {
+  const url = new URL(location.href);
+  const path = url.pathname.replace(/\/+$/, '');
+  return path === '/feed/history' || (path === '/playlist' && url.searchParams.get('list') === 'WL');
+}
+
+let generation = 0;
+let activeUrl: string | undefined;
+let stopPage: (() => void) | undefined;
+function suspendPage(): void {
+  generation++;
+  activeUrl = undefined;
+  stopPage?.();
+  stopPage = undefined;
+  if (toastTimer) clearTimeout(toastTimer);
+  document.querySelector('.aw-toast')?.remove();
+}
+function syncPage(): void {
+  // Keep the existing playback and counter session for normal YouTube navigation.
+  if (!excludedPage() && stopPage) return;
+  if (activeUrl === location.href) return;
+  suspendPage();
+  if (excludedPage()) return;
+  activeUrl = location.href;
+  const current = generation;
+  const isCurrent = (): boolean => current === generation && activeUrl === location.href && !excludedPage();
+  void start(isCurrent).then(stop => {
+    if (isCurrent()) stopPage = stop;
+    else stop?.();
+  }).catch(error => { if (isCurrent()) showError(error); });
+}
+watchNavigation(() => { if (excludedPage()) suspendPage(); }, syncPage);
+window.addEventListener('pagehide', suspendPage);
+window.addEventListener('pageshow', event => { if (event.persisted) syncPage(); });
+syncPage();
