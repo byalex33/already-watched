@@ -194,7 +194,8 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
 function excludedPage(): boolean {
   const url = new URL(location.href);
   const path = url.pathname.replace(/\/+$/, '');
-  return path === '/feed/history' || (path === '/playlist' && url.searchParams.get('list') === 'WL');
+  return path === '/feed/history' || path === '/playlist'
+    || /^\/(?:@[^/]+|(?:channel|c|user)\/[^/]+)(?:\/|$)/.test(path);
 }
 
 let generation = 0;

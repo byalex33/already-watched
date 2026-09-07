@@ -13,7 +13,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-it('leaves History and Watch Later untouched and resumes on other pages', async () => {
+it('leaves History, playlists, and profiles untouched and resumes on other pages', async () => {
   vi.useFakeTimers();
   history.replaceState({}, '', '/feed/history');
   document.body.innerHTML = '<ytd-video-renderer><a id="thumbnail" href="/watch?v=dQw4w9WgXcQ"><img></a><h3>Video</h3><ytd-thumbnail-overlay-resume-playback-renderer><div id="progress" style="width: 100%"></div></ytd-thumbnail-overlay-resume-playback-renderer></ytd-video-renderer>';
@@ -22,12 +22,18 @@ it('leaves History and Watch Later untouched and resumes on other pages', async 
   expect(document.querySelector('.aw-control')).toBeNull();
   expect(sendMessage).not.toHaveBeenCalled();
 
-  for (const path of ['/', '/playlist?list=WL', '/results?search_query=test', '/feed/history?query=test', '/playlist?list=PL123']) {
+  const excludedPaths = [
+    '/feed/history?query=test', '/playlist?list=WL', '/playlist?list=PL123', '/playlist/?list=LL',
+    '/@creator', '/@creator/videos', '/@creator/shorts', '/@creator/playlists?view=1',
+    '/channel/UC123', '/channel/UC123/streams', '/c/creator/videos', '/user/creator/featured'
+  ];
+  // Reuse the same card across navigation to verify hiding is cleared and restored.
+  for (const path of excludedPaths.flatMap(path => ['/', path, '/results?search_query=test'])) {
     document.dispatchEvent(new Event('yt-navigate-start'));
     history.replaceState({}, '', path);
     document.dispatchEvent(new Event('yt-navigate-finish'));
     await vi.advanceTimersByTimeAsync(500);
-    const excluded = path.includes('history') || path.includes('list=WL');
+    const excluded = excludedPaths.includes(path);
     expect(Boolean(document.querySelector('.aw-control')), path).toBe(!excluded);
     if (excluded) expect(document.querySelector('[class*="aw-"]')).toBeNull();
     else expect(document.querySelector('.aw-hidden')).not.toBeNull();
@@ -40,7 +46,7 @@ it('leaves History and Watch Later untouched and resumes on other pages', async 
   history.replaceState({}, '', '/');
   window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
   document.dispatchEvent(new Event('yt-navigate-start'));
-  history.replaceState({}, '', '/playlist?list=WL');
+  history.replaceState({}, '', '/@creator/videos');
   document.dispatchEvent(new Event('yt-navigate-finish'));
   resolveSnapshot({ ok: true, data: { settings: { ...DEFAULT_SETTINGS, displayMode: 'hide' }, records: {}, revision: 0 } });
   await vi.advanceTimersByTimeAsync(500);
