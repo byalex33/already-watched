@@ -11,6 +11,12 @@ export class CardObserver {
       for (const mutation of mutations) {
         const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
         if (!target || target.closest(SELECTORS.extensionOwned)) continue;
+        // Only live-badge class transitions affect detection. Ignore our own
+        // decoration classes so observing classes cannot create a rescan loop.
+        if (mutation.attributeName === 'class') {
+          const wasLive = (mutation.oldValue ?? '').split(/\s+/).includes('badge-style-type-live-now');
+          if (wasLive === target.classList.contains('badge-style-type-live-now')) continue;
+        }
         const owner = cardRoot(target);
         if (owner) this.pending.add(owner);
         if (owner) this.roots.add(owner);
@@ -32,7 +38,7 @@ export class CardObserver {
     });
   }
   start(): void {
-    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['href', 'style', 'aria-valuenow', 'aria-valuemax', 'now-playing-badge', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts', 'overlay-style'] });
+    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true, attributeFilter: ['href', 'style', 'aria-valuenow', 'aria-valuemax', 'now-playing-badge', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts', 'overlay-style', 'class'] });
     this.scan();
   }
   scan(): void {

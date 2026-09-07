@@ -65,3 +65,24 @@ it('handles late badges, ended streams, and detached cards without an observer l
   expect(card.classList.contains('aw-home-live-hidden')).toBe(false);
   expect(update.mock.calls.length).toBeLessThan(10);
 });
+
+it('ignores badge-renderer live indicators inside avatars and channel links', () => {
+  const card = fixture('');
+  card.insertAdjacentHTML('beforeend', '<yt-decorated-avatar-view-model><yt-badge-view-model>LIVE</yt-badge-view-model><span class="badge-style-type-live-now">LIVE</span></yt-decorated-avatar-view-model><div id="metadata"><a id="avatar-link"><yt-badge-view-model>LIVE</yt-badge-view-model></a></div>');
+  filter.update(document);
+  expect(card.classList.contains('aw-home-live-hidden')).toBe(false);
+});
+it('detects video metadata badges and class-only live transitions', async () => {
+  vi.useFakeTimers();
+  const card = fixture('');
+  card.insertAdjacentHTML('beforeend', '<yt-content-metadata-view-model><ytd-badge-supported-renderer><span>EN DIRECT</span></ytd-badge-supported-renderer></yt-content-metadata-view-model>');
+  const badge = card.querySelector('ytd-badge-supported-renderer span')!;
+  observer = new CardObserver(vi.fn(), vi.fn(), vi.fn(), root => filter.update(root)); observer.start();
+  expect(card.classList.contains('aw-home-live-hidden')).toBe(false);
+  badge.classList.add('badge-style-type-live-now');
+  await vi.advanceTimersByTimeAsync(500);
+  expect(card.classList.contains('aw-home-live-hidden')).toBe(true);
+  badge.classList.remove('badge-style-type-live-now');
+  await vi.advanceTimersByTimeAsync(500);
+  expect(card.classList.contains('aw-home-live-hidden')).toBe(false);
+});

@@ -5,10 +5,13 @@ import { isHomePage } from './home-shorts-filter';
 // A channel avatar can advertise a different live video. Only inspect the
 // video's thumbnail overlay and metadata badges, never its title or avatar.
 export function isLivestream(card: HTMLElement): boolean {
-  return !!card.querySelector('ytd-thumbnail-overlay-time-status-renderer[overlay-style="LIVE"], .badge-style-type-live-now')
-    || [...card.querySelectorAll('yt-thumbnail-badge-view-model, yt-badge-view-model, ytd-badge-supported-renderer')].some(badge =>
-      /^(?:live|live now)$/i.test(badge.textContent?.trim() ?? '')
-    );
+  const scopes = '#thumbnail, yt-thumbnail-view-model, yt-thumbnail-view-model-wiz, a.yt-lockup-view-model__content-image, a.yt-lockup-view-model-wiz__content-image, #badges, #metadata, yt-content-metadata-view-model, yt-content-metadata-view-model-wiz';
+  const excluded = '#avatar, #avatar-link, #channel-thumbnail, yt-avatar-shape, yt-avatar-shape-wiz, yt-decorated-avatar-view-model, ytd-channel-name, ytd-channel-renderer';
+  return [...card.querySelectorAll('ytd-thumbnail-overlay-time-status-renderer, .badge-style-type-live-now, yt-thumbnail-badge-view-model, yt-badge-view-model, ytd-badge-supported-renderer')].some(badge => {
+    if (!badge.closest(scopes) || badge.closest(excluded)) return false;
+    return badge.matches('[overlay-style="LIVE"], .badge-style-type-live-now')
+      || /^(?:live|live now)$/i.test(badge.textContent?.trim() ?? '');
+  });
 }
 
 export class HomeLivestreamFilter {
