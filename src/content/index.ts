@@ -35,11 +35,16 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
   const buffered: Record<string, chrome.storage.StorageChange>[] = [];
   let receive = (changes: Record<string, chrome.storage.StorageChange>): void => { buffered.push(changes); };
   const storageListener = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => { if (area === 'local') receive(changes); };
+  // An extension reload can invalidate APIs while the old content script is still alive.
+  const removeStorageListener = (): void => {
+    try { chrome.storage?.onChanged?.removeListener(storageListener); }
+    catch { /* Invalidated extension contexts cannot remove Chrome listeners. */ }
+  };
   chrome.storage.onChanged.addListener(storageListener);
   let state: Snapshot;
   try { state = await request<Snapshot>({ type: 'snapshot' }); }
-  catch (error) { chrome.storage.onChanged.removeListener(storageListener); throw error; }
-  if (!isCurrent()) { chrome.storage.onChanged.removeListener(storageListener); return; }
+  catch (error) { removeStorageListener(); throw error; }
+  if (!isCurrent()) { removeStorageListener(); return; }
   const cards = new Map<HTMLElement, VideoCard>();
   const byVideo = new Map<string, Set<HTMLElement>>();
   const filtered = new FilterObservations();
@@ -184,8 +189,9 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
     homeShortsFilter.clear();
     playlistFilter.clear();
     if (pruneTimer) clearTimeout(pruneTimer);
-    chrome.storage.onChanged.removeListener(storageListener);
-    chrome.runtime.onMessage.removeListener(messageListener);
+    removeStorageListener();
+    try { chrome.runtime?.onMessage?.removeListener(messageListener); }
+    catch { /* Continue DOM cleanup even if Chrome has invalidated this context. */ }
     document.removeEventListener('visibilitychange', onVisibility);
     for (const element of cards.keys()) unregister(element);
   };
@@ -204,8 +210,9 @@ let stopPage: (() => void) | undefined;
 function suspendPage(): void {
   generation++;
   activeUrl = undefined;
-  stopPage?.();
+  const stop = stopPage;
   stopPage = undefined;
+  stop?.();
   if (toastTimer) clearTimeout(toastTimer);
   document.querySelector('.aw-toast')?.remove();
 }
