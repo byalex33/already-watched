@@ -209,6 +209,8 @@ function suspendPage(): void {
   document.querySelector('.aw-toast')?.remove();
 }
 function syncPage(): void {
+  // Keep the existing playback and counter session for normal YouTube navigation.
+  if (!excludedPage() && stopPage) return;
   if (activeUrl === location.href) return;
   suspendPage();
   if (excludedPage()) return;
@@ -220,7 +222,7 @@ function syncPage(): void {
     else stop?.();
   }).catch(error => { if (isCurrent()) showError(error); });
 }
-watchNavigation(suspendPage, syncPage);
+watchNavigation(() => { if (excludedPage()) suspendPage(); }, syncPage);
 window.addEventListener('pagehide', suspendPage);
 window.addEventListener('pageshow', event => { if (event.persisted) syncPage(); });
 syncPage();
