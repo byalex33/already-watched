@@ -1,3 +1,4 @@
+import { youtubeViewCount } from '../youtube/view-count';
 import { cardRoot, SELECTORS } from '../youtube/selectors';
 import { parseVideoUrl } from '../youtube/video-id';
 import { youtubeProgress } from '../youtube/progress-detection';
@@ -9,6 +10,7 @@ export interface VideoCard {
   shorts: boolean;
   title?: string;
   progress: number | null;
+  views?: number | null;
 }
 export function detectCard(element: HTMLElement): VideoCard | null {
   if (element.matches(SELECTORS.adCard) || element.querySelector(SELECTORS.adCard)) return null;
@@ -21,7 +23,7 @@ export function detectCard(element: HTMLElement): VideoCard | null {
   const thumbnail = anchor.matches(SELECTORS.thumbnail) ? anchor : element.querySelector<HTMLElement>(SELECTORS.thumbnail);
   if (!thumbnail) return null;
   const title = element.querySelector(SELECTORS.title)?.textContent?.trim() || anchor.getAttribute('title') || anchor.getAttribute('aria-label') || undefined;
-  return { element, thumbnail, ...parsed, title: title?.slice(0, 300), progress: youtubeProgress(element) };
+  return { element, thumbnail, ...parsed, title: title?.slice(0, 300), progress: youtubeProgress(element), views: youtubeViewCount(element) };
 }
 export function findCardRoots(root: Element | Document): Set<HTMLElement> {
   const found = new Set<HTMLElement>();

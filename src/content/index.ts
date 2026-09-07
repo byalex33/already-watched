@@ -1,3 +1,4 @@
+import { matchesContentFilters } from '../shared/content-filters';
 import { REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
 import { FilterObservations } from './filter-observations';
 import { localDay } from '../shared/date';
@@ -80,7 +81,7 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
     const watched = isWatched(record, card.progress, card.shorts, state.settings);
     decorator.apply(card, watched, record, state.settings);
     if (card.element.closest(SELECTORS.sectionHidden)) return;
-    if (watched) filtered.observe(card.videoId);
+    if (watched || matchesContentFilters(card, state.settings)) filtered.observe(card.videoId);
     if (state.settings.enabled && record && Date.now() - record.lastSeen >= 3_600_000) touches.add(card.videoId);
   }
   function process(roots: Set<HTMLElement>): void {

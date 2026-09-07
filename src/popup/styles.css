@@ -93,3 +93,11 @@ footer svg { flex-shrink: 0; width: 14px; height: 14px; fill: none; stroke: curr
 @media (min-width: 700px) { main { margin: 28px auto; border: 1px solid var(--border); border-radius: 12px; } }
 @media (max-width: 359px) { main { padding: 18px; } h1 { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
+
+.content-filters h2 { margin-bottom: 16px; }
+.content-filters input, .content-filters textarea { display: block; width: 100%; margin-top: 6px; border: 1px solid #bcc8c0; border-radius: 6px; padding: 10px 12px; color: #202824; background: #fff; font-size: 13px; line-height: 1.5; }
+.content-filters textarea { resize: vertical; min-height: 100px; }
+.content-filters textarea::placeholder { color: #68736c; }
+.content-filters button { background: var(--accent); border-color: var(--accent); color: #fff; }
+.content-filters button:hover:not(:disabled) { background: #1c5038; }
+.content-filters form > .hint:last-child { margin-bottom: 0; }

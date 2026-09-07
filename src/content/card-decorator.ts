@@ -1,3 +1,4 @@
+import { matchesContentFilters } from '../shared/content-filters';
 import { formatWatchedDate } from '../shared/date';
 import type { Settings, VideoRecord } from '../shared/types';
 import type { VideoCard } from './card-detector';
@@ -34,7 +35,7 @@ export class CardDecorator {
     const { badge, button } = decoration;
     card.element.classList.add('aw-card');
     card.element.classList.toggle('aw-dim', watched && ['dim', 'badge-dim'].includes(settings.displayMode));
-    card.element.classList.toggle('aw-hidden', watched && ['hide', 'hide-refill'].includes(settings.displayMode));
+    card.element.classList.toggle('aw-hidden', matchesContentFilters(card, settings) || (watched && ['hide', 'hide-refill'].includes(settings.displayMode)));
     badge.hidden = !watched || !['badge', 'badge-dim'].includes(settings.displayMode);
     const date = settings.showWatchedDate ? formatWatchedDate(record?.watchedAt) : null;
     const badgeText = `WATCHED${date ? `\n${date}` : ''}`;

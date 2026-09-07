@@ -5,6 +5,31 @@ import type { DisplayMode, Reply, Settings, Summary } from '../shared/types';
 function Toggle({ label, description, checked, disabled, onChange }: { label: string; description?: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void }) {
   return <label className="toggle-row"><span><span className="setting-label">{label}</span>{description && <span className="description">{description}</span>}</span><input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={event => onChange(event.target.checked)} /><span className="switch" aria-hidden="true" /></label>;
 }
+function ContentFilterSettings({ settings, onSave }: { settings: Settings; onSave: (patch: Partial<Settings>) => Promise<boolean | undefined> }) {
+  const [minimum, setMinimum] = useState(String(settings.minimumViews));
+  const [terms, setTerms] = useState(settings.blockedTitleTerms.join('\n'));
+  const [dirty, setDirty] = useState(false);
+  const [savingFilters, setSavingFilters] = useState(false);
+  useEffect(() => {
+    if (!dirty) { setMinimum(String(settings.minimumViews)); setTerms(settings.blockedTitleTerms.join('\n')); }
+  }, [settings.minimumViews, settings.blockedTitleTerms, dirty]);
+  return <section className="settings-section content-filters"><h2>Title and view filters</h2>
+    <form onSubmit={event => {
+      event.preventDefault(); setSavingFilters(true);
+      void onSave({ minimumViews: Number(minimum), blockedTitleTerms: terms.split('\n').map(term => term.trim()).filter(Boolean) })
+        .then(saved => { if (saved) setDirty(false); }).finally(() => setSavingFilters(false));
+    }}>
+      <label className="setting-label" htmlFor="minimum-views">Minimum views</label>
+      <input id="minimum-views" type="number" min="0" max={Number.MAX_SAFE_INTEGER} step="1" required value={minimum} disabled={savingFilters} onChange={event => { setMinimum(event.target.value); setDirty(true); }} aria-describedby="views-hint" />
+      <p className="hint" id="views-hint">Hide videos with fewer views. Use 0 to turn this off. Counts must be in English; videos without a readable count stay visible.</p>
+      <label className="setting-label" htmlFor="blocked-titles">Words to hide from titles</label>
+      <textarea id="blocked-titles" rows={4} value={terms} disabled={savingFilters} onChange={event => { setTerms(event.target.value); setDirty(true); }} placeholder={'reaction\nlove island\n#shorts'} aria-describedby="titles-hint" />
+      <p className="hint" id="titles-hint">Add one word or phrase per line. Matches any part of a title, regardless of capitals. Up to 200 entries, 300 characters each.</p>
+      <button disabled={!dirty || savingFilters} type="submit">{savingFilters ? 'Saving…' : 'Save filters'}</button>
+      <p className="hint">These filters always hide matching videos. Turn on “Include Shorts” to filter Shorts too.</p>
+    </form>
+  </section>;
+}
 const MODES: { value: DisplayMode; label: string; description: string }[] = [
   { value: 'badge', label: 'Show a badge', description: 'Keep videos visible with a watched label.' }, { value: 'dim', label: 'Dim videos', description: 'Fade watched videos in the feed.' },
   { value: 'hide', label: 'Hide videos', description: 'Remove watched videos from the feed.' }, { value: 'badge-dim', label: 'Dim and show a badge', description: 'Fade videos and add a watched label.' },
@@ -40,13 +65,13 @@ export function App() {
     const interval = setInterval(listener, 10_000);
     return () => { chrome.storage.onChanged.removeListener(listener); if (timer) clearTimeout(timer); clearInterval(interval); };
   }, [refresh]);
-  async function update(patch: Partial<Settings>): Promise<void> {
+  async function update(patch: Partial<Settings>): Promise<boolean | undefined> {
     if (!settingsRef.current) return;
     const next = { ...settingsRef.current, ...patch };
     settingsRef.current = next; setSettings(next); setError(''); setSaving(true); pendingSave.current = true;
     const current = ++sequence.current;
-    try { await request({ type: 'settings', settings: patch }); }
-    catch (e) { setError(errorMessage(e)); }
+    try { await request({ type: 'settings', settings: patch }); return true; }
+    catch (e) { setError(errorMessage(e)); return false; }
     finally {
       if (current === sequence.current) { pendingSave.current = false; setSaving(false); await refresh().catch(e => setError(errorMessage(e))); }
     }
@@ -84,6 +109,7 @@ export function App() {
       <div className="range-labels"><span>10%</span><span>100%</span></div>
       <p className="hint">The percentage of a video you play. Skipped sections don’t count.</p>
     </section>
+    <ContentFilterSettings settings={settings} onSave={update} />
     <section className="toggles"><h2>Feed filters</h2>
       <Toggle label="Hide playlists and Mixes" description="Hide playlist and Mix cards. Keep individual videos." checked={settings.hidePlaylists} onChange={hidePlaylists => { void update({ hidePlaylists }); }} />
       <Toggle label="Hide Shorts on Home" description="Hide Shorts cards and sections on the Home page." checked={settings.hideHomeShorts} onChange={hideHomeShorts => { void update({ hideHomeShorts }); }} />
