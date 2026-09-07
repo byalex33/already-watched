@@ -1,3 +1,4 @@
+import { HomeLivestreamFilter } from './home-livestream-filter';
 import { matchesContentFilters } from '../shared/content-filters';
 import { REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
 import { FilterObservations } from './filter-observations';
@@ -66,6 +67,7 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
   );
   const refiller = new FeedRefiller(() => state.settings, () => cards.values());
   const promotionalFilter = new PromotionalFilter(() => state.settings);
+  const homeLivestreamFilter = new HomeLivestreamFilter(() => state.settings);
   const homeShortsFilter = new HomeShortsFilter(() => state.settings);
   const playlistFilter = new PlaylistFilter(() => state.settings);
   function unregister(element: HTMLElement): void {
@@ -100,15 +102,16 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
   let pruneTimer: ReturnType<typeof setTimeout> | undefined;
   const prune = (): void => {
     if (pruneTimer) return;
-    pruneTimer = setTimeout(() => { pruneTimer = undefined; for (const element of cards.keys()) if (!element.isConnected) unregister(element); promotionalFilter.prune(); homeShortsFilter.prune(); playlistFilter.prune(); }, 500);
+    pruneTimer = setTimeout(() => { pruneTimer = undefined; for (const element of cards.keys()) if (!element.isConnected) unregister(element); promotionalFilter.prune(); homeShortsFilter.prune(); homeLivestreamFilter.prune(); playlistFilter.prune(); }, 500);
   };
-  const observer = new CardObserver(process, prune, () => refiller.schedule(), root => { promotionalFilter.update(root); homeShortsFilter.update(root); playlistFilter.update(root); });
+  const observer = new CardObserver(process, prune, () => refiller.schedule(), root => { promotionalFilter.update(root); homeShortsFilter.update(root); homeLivestreamFilter.update(root); playlistFilter.update(root); });
   receive = changes => {
     let all = false;
     if (changes[SETTINGS_KEY]) {
       state.settings = normalizeSettings(changes[SETTINGS_KEY].newValue);
       promotionalFilter.update(document);
       homeShortsFilter.update(document);
+      homeLivestreamFilter.update(document);
       playlistFilter.update(document);
       all = true;
     }
@@ -188,6 +191,7 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
     videoMenu.stop();
     promotionalFilter.clear();
     homeShortsFilter.clear();
+    homeLivestreamFilter.clear();
     playlistFilter.clear();
     if (pruneTimer) clearTimeout(pruneTimer);
     removeStorageListener();
