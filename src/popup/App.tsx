@@ -26,7 +26,7 @@ function ContentFilterSettings({ settings, onSave }: { settings: Settings; onSav
       <textarea id="blocked-titles" rows={4} value={terms} disabled={savingFilters} onChange={event => { setTerms(event.target.value); setDirty(true); }} placeholder={'reaction\nlove island\n#shorts'} aria-describedby="titles-hint" />
       <p className="hint" id="titles-hint">Add one word or phrase per line. Matches any part of a title, regardless of capitals. Up to 200 entries, 300 characters each.</p>
       <button disabled={!dirty || savingFilters} type="submit">{savingFilters ? 'Saving…' : 'Save filters'}</button>
-      <p className="hint">These filters always hide matching videos. Turn on “Include Shorts” to filter Shorts too.</p>
+      <p className="hint">These filters hide matching videos while the extension is enabled. Turn on “Include Shorts” to filter Shorts too.</p>
     </form>
   </section>;
 }
