@@ -32,7 +32,7 @@ export class CardObserver {
     });
   }
   start(): void {
-    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['href', 'style', 'aria-valuenow', 'aria-valuemax', 'now-playing-badge', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts'] });
+    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['href', 'style', 'aria-valuenow', 'aria-valuemax', 'now-playing-badge', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts', 'overlay-style'] });
     this.scan();
   }
   scan(): void {
