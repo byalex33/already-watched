@@ -2,6 +2,7 @@ import { build, context } from 'esbuild';
 import { mkdir, copyFile, cp } from 'node:fs/promises';
 await mkdir('dist', { recursive: true });
 await copyFile('manifest.json', 'dist/manifest.json');
+await copyFile('LICENSE', 'dist/LICENSE');
 await cp('public', 'dist', { recursive: true });
 await copyFile('src/content/styles.css', 'dist/content.css');
 const common = { bundle: true, minify: !process.argv.includes('--watch'), target: 'chrome114', logLevel: 'info' };

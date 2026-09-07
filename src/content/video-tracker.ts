@@ -16,10 +16,14 @@ interface Session {
   lastSave: number;
   saving: boolean;
   retryAfter: number;
+  retiredFailures: number;
+  retryTimer?: ReturnType<typeof setTimeout>;
 }
 export class VideoTracker {
   private session?: Session;
+  private retired = new Set<Session>();
   private pausedForNavigation = false;
+  private stopped = false;
   private timer: ReturnType<typeof setInterval>;
   private readonly interrupt = (): void => { if (this.session) this.session.last = undefined; };
   private readonly save = (): void => { this.tick(); void this.flush(); };
@@ -30,25 +34,36 @@ export class VideoTracker {
     this.tick();
   }
   navigationStart(): void {
-    void this.flush(); this.detach(); this.pausedForNavigation = true;
+    this.detach(true); this.pausedForNavigation = true;
   }
   navigationFinish(): void { this.pausedForNavigation = false; this.tick(); }
-  reset(): void { this.detach(); }
-  private detach(): void {
+  reset(): void {
+    this.detach();
+    for (const session of this.retired) this.discard(session);
+  }
+  private discard(session: Session): void {
+    session.segments = [];
+    if (session.retryTimer) clearTimeout(session.retryTimer);
+    this.retired.delete(session);
+  }
+  private detach(save = false): void {
     if (this.session) {
       const video = this.session.video;
       video.removeEventListener('seeking', this.interrupt);
       video.removeEventListener('emptied', this.interrupt);
       video.removeEventListener('pause', this.save);
       video.removeEventListener('ended', this.save);
+      if (save) { this.retired.add(this.session); void this.flush(this.session); }
+      else this.discard(this.session);
     }
     this.session = undefined;
   }
   private tick(): void {
+    if (this.stopped) return;
     const snapshot = this.snapshot();
     const route = currentPlaybackId(location.href);
     if (this.pausedForNavigation || !snapshot.settings.enabled || !route || (route.shorts && !snapshot.settings.applyToShorts)) {
-      if (this.session) { void this.flush(); this.detach(); }
+      if (this.session) { this.detach(true); }
       return;
     }
     const elements = playerElements(route.shorts);
@@ -61,10 +76,10 @@ export class VideoTracker {
     }
     let session = this.session;
     if (session && (session.videoId !== route.videoId || session.video !== video || session.source !== video.currentSrc || Math.abs(session.duration - video.duration) > 1 || session.revision !== snapshot.revision)) {
-      void this.flush(); this.detach(); session = undefined;
+      this.detach(true); session = undefined;
     }
     if (!session) {
-      session = { videoId: route.videoId, video, source: video.currentSrc, duration: video.duration, segments: [], revision: snapshot.revision, lastSave: Date.now(), saving: false, retryAfter: 0, title: document.querySelector(SELECTORS.watchTitle)?.textContent?.trim().slice(0, 300) };
+      session = { videoId: route.videoId, video, source: video.currentSrc, duration: video.duration, segments: [], revision: snapshot.revision, lastSave: Date.now(), saving: false, retryAfter: 0, retiredFailures: 0, title: document.querySelector(SELECTORS.watchTitle)?.textContent?.trim().slice(0, 300) };
       this.session = session;
       video.addEventListener('seeking', this.interrupt);
       video.addEventListener('emptied', this.interrupt);
@@ -87,9 +102,15 @@ export class VideoTracker {
     const progress = watchedFraction([...(existing?.segments ?? []), ...session.segments], session.duration);
     if ((!existing?.watched && meetsThreshold(progress, snapshot.settings.threshold)) || Date.now() - session.lastSave >= 15_000 || video.ended) void this.flush();
   }
-  private async flush(): Promise<void> {
-    const session = this.session;
-    if (!session || session.saving || !session.segments.length || Date.now() < session.retryAfter) return;
+  /** Drain a departing session after its in-flight write, with bounded retries. */
+  private async flush(session = this.session): Promise<void> {
+    if (!session || session.saving) return;
+    if (session.revision !== this.snapshot().revision) { this.discard(session); return; }
+    if (!session.segments.length) { this.retired.delete(session); return; }
+    if (Date.now() < session.retryAfter) {
+      this.retryRetired(session);
+      return;
+    }
     const segments = session.segments;
     session.segments = [];
     session.saving = true;
@@ -99,11 +120,29 @@ export class VideoTracker {
     } catch (error) {
       session.segments = mergeSegments([...segments, ...session.segments], session.duration);
       session.retryAfter = Date.now() + 15_000;
+      if (this.retired.has(session)) session.retiredFailures++;
       this.onError(error);
-    } finally { session.saving = false; }
+    } finally {
+      session.saving = false;
+      if (this.retired.has(session)) {
+        if (session.retiredFailures >= 3) this.discard(session);
+        else if (Date.now() < session.retryAfter) this.retryRetired(session);
+        else void this.flush(session);
+      }
+    }
+  }
+  private retryRetired(session: Session): void {
+    if (this.stopped || !this.retired.has(session) || session.retryTimer) return;
+    session.retryTimer = setTimeout(() => {
+      session.retryTimer = undefined;
+      void this.flush(session);
+    }, Math.max(0, session.retryAfter - Date.now()));
   }
   stop(): void {
-    void this.flush(); this.detach(); clearInterval(this.timer);
+    if (this.stopped) return;
+    this.stopped = true;
+    this.detach(true); clearInterval(this.timer);
+    for (const session of this.retired) this.discard(session);
     window.removeEventListener('pagehide', this.save);
     document.removeEventListener('visibilitychange', this.save);
   }

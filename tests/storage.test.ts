@@ -5,12 +5,17 @@ import type { Summary, VideoRecord } from '../src/shared/types';
 import { videoKey } from '../src/storage/watched-store';
 const id = 'dQw4w9WgXcQ';
 let data: Record<string, unknown>;
+let sessionData: Record<string, unknown>;
 let set: ReturnType<typeof vi.fn>;
 let repository: Repository;
 beforeEach(() => {
-  data = {};
+  data = {}; sessionData = {};
   set = vi.fn(async (values: Record<string, unknown>) => { Object.assign(data, structuredClone(values)); });
-  vi.stubGlobal('chrome', { storage: { local: {
+  vi.stubGlobal('chrome', { storage: { session: {
+    get: vi.fn(async (key: string) => structuredClone(key in sessionData ? { [key]: sessionData[key] } : {})),
+    set: vi.fn(async (values: Record<string, unknown>) => { Object.assign(sessionData, structuredClone(values)); }),
+    remove: vi.fn(async (key: string) => { delete sessionData[key]; })
+  }, local: {
     get: vi.fn(async (keys: string | string[] | null) => structuredClone(keys === null ? data : Object.fromEntries((typeof keys === 'string' ? [keys] : keys).filter(key => key in data).map(key => [key, data[key]])))),
     set, remove: vi.fn(async (keys: string[]) => { keys.forEach(key => { delete data[key]; }); }),
     getBytesInUse: vi.fn(async () => JSON.stringify(data).length)
@@ -18,6 +23,90 @@ beforeEach(() => {
   repository = new Repository();
 });
 describe('single-writer repository', () => {
+  it('rejects a reset when its revision cannot advance without changing stored history', async () => {
+    data[REVISION_KEY] = Number.MAX_SAFE_INTEGER;
+    data[videoKey(id)] = { videoId: id, watched: true, progress: 1, source: 'manual', lastSeen: Date.now() };
+    const previous = structuredClone(data);
+    await expect(repository.dispatch({ type: 'clear' })).rejects.toThrow('History revision limit reached');
+    expect(data).toEqual(previous);
+    expect(sessionData).toEqual({});
+  });
+  it('counts late observations on their original day and deduplicates across restarts', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 6, 0, 0, 1));
+    try {
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 0, filteredAllTime: 1 });
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-06' });
+      repository = new Repository();
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+      await repository.dispatch({ type: 'clear' });
+      expect(Object.keys(data).filter(key => key.startsWith('filtered:'))).toEqual([]);
+      expect(await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' })).toEqual({ stale: true });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 0, filteredAllTime: 0 });
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('reports today from its daily bucket when the local date moves backward', async () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 6, 0, 5));
+    try {
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0 });
+      vi.setSystemTime(new Date(2026, 8, 5, 23, 5));
+      await repository.dispatch({ type: 'filtered', videoIds: ['abcdefghijk'], revision: 0 });
+      repository = new Repository();
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+      vi.setSystemTime(new Date(2026, 8, 6, 0, 5));
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('preserves legacy daily deduplication when the first new-format batch is from another day', async () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 6, 0, 0, 1));
+    try {
+      data[STATS_KEY] = { day: '2026-09-05', filteredIds: [id], filteredAllTime: 1, totalMarked: 0 };
+      await repository.dispatch({ type: 'filtered', videoIds: ['abcdefghijk'], revision: 0, day: '2026-09-06' });
+      await repository.dispatch({ type: 'filtered', videoIds: [id], revision: 0, day: '2026-09-05' });
+      expect(await repository.dispatch({ type: 'summary' })).toMatchObject({ filteredToday: 1, filteredAllTime: 2 });
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('clears a full profile before its first history revision has been stored', async () => {
+    data.settings = { ...DEFAULT_SETTINGS, threshold: 85 };
+    data[videoKey(id)] = { videoId: id, watched: false, progress: .5, source: 'playback', lastSeen: Date.now(), title: 'x'.repeat(1000) };
+    const bytes = (values: Record<string, unknown>): number => Object.entries(values).reduce((sum, [key, value]) => sum + key.length + JSON.stringify(value).length, 0);
+    const quota = bytes(data);
+    set.mockImplementation(async values => {
+      if (bytes({ ...data, ...values }) > quota) throw new Error('QUOTA_BYTES exceeded');
+      Object.assign(data, structuredClone(values));
+    });
+    await repository.dispatch({ type: 'clear' });
+    expect(data[videoKey(id)]).toBeUndefined();
+    expect(data[REVISION_KEY]).toBe(1);
+    expect((await repository.dispatch({ type: 'summary' }) as Summary).settings.threshold).toBe(85);
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
+  });
+  it('finishes an interrupted clear after the worker restarts before accepting stale playback', async () => {
+    await repository.dispatch({ type: 'mark', videoId: id, watched: true });
+    vi.mocked(chrome.storage.local.remove).mockRejectedValueOnce(new Error('Interrupted'));
+    await expect(repository.dispatch({ type: 'clear' })).rejects.toThrow('Interrupted');
+    repository = new Repository();
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
+    expect(data[videoKey(id)]).toBeUndefined();
+    expect(sessionData).toEqual({});
+  });
+
+  it('preserves independent settings edits from concurrent clients', async () => {
+    await repository.dispatch({ type: 'settings', settings: { ...DEFAULT_SETTINGS, threshold: 85 } });
+    await Promise.all([
+      repository.dispatch({ type: 'settings', settings: { hideHomeShorts: true } }),
+      repository.dispatch({ type: 'settings', settings: { hidePlaylists: true } })
+    ]);
+    expect((await repository.dispatch({ type: 'summary' }) as Summary).settings).toMatchObject({
+      hideHomeShorts: true, hidePlaylists: true, threshold: 85
+    });
+  });
+
   it('serializes simultaneous tabs and persists only individual changed records', async () => {
     await Promise.all([
       repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 40]], revision: 0 }),

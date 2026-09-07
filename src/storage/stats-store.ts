@@ -14,8 +14,7 @@ export function normalizeStats(value: unknown): Stats {
     totalMarked: typeof data.totalMarked === 'number' ? Math.max(0, data.totalMarked) : 0
   };
 }
-export function addFiltered(stats: Stats, videoIds: string[], now = Date.now()): Stats {
-  const day = localDay(now);
+export function addFiltered(stats: Stats, videoIds: string[], now = Date.now(), day = localDay(now)): Stats {
   const seen = new Set(stats.day === day ? stats.filteredIds : []);
   const previous = seen.size;
   videoIds.filter(isVideoId).forEach(id => seen.add(id));
