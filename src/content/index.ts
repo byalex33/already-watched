@@ -1,4 +1,7 @@
+import { HomeLivestreamFilter } from './home-livestream-filter';
+import { matchesContentFilters } from '../shared/content-filters';
 import { REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { FilterObservations } from './filter-observations';
 import { localDay } from '../shared/date';
 import { errorMessage, request } from '../shared/messaging';
 import { meetsThreshold } from '../shared/progress';
@@ -20,6 +23,7 @@ import { VideoMenu } from './video-menu';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 function showError(error: unknown): void {
+  if (excludedPage()) return;
   let toast = document.querySelector<HTMLElement>('.aw-toast');
   if (!toast) { toast = document.createElement('div'); toast.className = 'aw-toast'; toast.setAttribute('role', 'status'); document.body.append(toast); }
   toast.textContent = `Already Watched: ${errorMessage(error)}`;
@@ -27,20 +31,25 @@ function showError(error: unknown): void {
   toastTimer = setTimeout(() => toast?.remove(), 6000);
 }
 
-async function start(): Promise<void> {
+async function start(isCurrent: () => boolean): Promise<(() => void) | undefined> {
   // Buffer events during initialization so a concurrent tab write cannot be lost
   // between the initial snapshot and installing the change listener.
   const buffered: Record<string, chrome.storage.StorageChange>[] = [];
   let receive = (changes: Record<string, chrome.storage.StorageChange>): void => { buffered.push(changes); };
   const storageListener = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => { if (area === 'local') receive(changes); };
+  // An extension reload can invalidate APIs while the old content script is still alive.
+  const removeStorageListener = (): void => {
+    try { chrome.storage?.onChanged?.removeListener(storageListener); }
+    catch { /* Invalidated extension contexts cannot remove Chrome listeners. */ }
+  };
   chrome.storage.onChanged.addListener(storageListener);
   let state: Snapshot;
   try { state = await request<Snapshot>({ type: 'snapshot' }); }
-  catch (error) { chrome.storage.onChanged.removeListener(storageListener); throw error; }
+  catch (error) { removeStorageListener(); throw error; }
+  if (!isCurrent()) { removeStorageListener(); return; }
   const cards = new Map<HTMLElement, VideoCard>();
   const byVideo = new Map<string, Set<HTMLElement>>();
-  const filtered = new Set<string>();
-  const seenToday = new Set<string>();
+  const filtered = new FilterObservations();
   const touches = new Set<string>();
   let day = localDay();
   let lastAutomaticError = 0;
@@ -58,6 +67,7 @@ async function start(): Promise<void> {
   );
   const refiller = new FeedRefiller(() => state.settings, () => cards.values());
   const promotionalFilter = new PromotionalFilter(() => state.settings);
+  const homeLivestreamFilter = new HomeLivestreamFilter(() => state.settings);
   const homeShortsFilter = new HomeShortsFilter(() => state.settings);
   const playlistFilter = new PlaylistFilter(() => state.settings);
   function unregister(element: HTMLElement): void {
@@ -73,7 +83,7 @@ async function start(): Promise<void> {
     const watched = isWatched(record, card.progress, card.shorts, state.settings);
     decorator.apply(card, watched, record, state.settings);
     if (card.element.closest(SELECTORS.sectionHidden)) return;
-    if (watched && !seenToday.has(card.videoId)) { filtered.add(card.videoId); seenToday.add(card.videoId); }
+    if (watched || matchesContentFilters(card, state.settings)) filtered.observe(card.videoId);
     if (state.settings.enabled && record && Date.now() - record.lastSeen >= 3_600_000) touches.add(card.videoId);
   }
   function process(roots: Set<HTMLElement>): void {
@@ -92,21 +102,22 @@ async function start(): Promise<void> {
   let pruneTimer: ReturnType<typeof setTimeout> | undefined;
   const prune = (): void => {
     if (pruneTimer) return;
-    pruneTimer = setTimeout(() => { pruneTimer = undefined; for (const element of cards.keys()) if (!element.isConnected) unregister(element); promotionalFilter.prune(); homeShortsFilter.prune(); playlistFilter.prune(); }, 500);
+    pruneTimer = setTimeout(() => { pruneTimer = undefined; for (const element of cards.keys()) if (!element.isConnected) unregister(element); promotionalFilter.prune(); homeShortsFilter.prune(); homeLivestreamFilter.prune(); playlistFilter.prune(); }, 500);
   };
-  const observer = new CardObserver(process, prune, () => refiller.schedule(), root => { promotionalFilter.update(root); homeShortsFilter.update(root); playlistFilter.update(root); });
+  const observer = new CardObserver(process, prune, () => refiller.schedule(), root => { promotionalFilter.update(root); homeShortsFilter.update(root); homeLivestreamFilter.update(root); playlistFilter.update(root); });
   receive = changes => {
     let all = false;
     if (changes[SETTINGS_KEY]) {
       state.settings = normalizeSettings(changes[SETTINGS_KEY].newValue);
       promotionalFilter.update(document);
       homeShortsFilter.update(document);
+      homeLivestreamFilter.update(document);
       playlistFilter.update(document);
       all = true;
     }
     if (changes[REVISION_KEY]) {
       state.revision = Number(changes[REVISION_KEY].newValue) || 0;
-      tracker.reset(); filtered.clear(); touches.clear(); seenToday.clear();
+      tracker.reset(); filtered.clear(); touches.clear();
     }
     const changedIds = new Set<string>();
     for (const [key, change] of Object.entries(changes)) {
@@ -130,20 +141,21 @@ async function start(): Promise<void> {
     if (flushing) return;
     flushing = true;
     const revision = state.revision;
-    const ids = [...filtered].slice(0, 500); ids.forEach(id => filtered.delete(id));
+    const batch = filtered.take();
     const touchedIds = [...touches].slice(0, 500); touchedIds.forEach(id => touches.delete(id));
     try {
-      if (ids.length) await request({ type: 'filtered', videoIds: ids, revision });
+      // Stale batches belong to an invalidated generation and must not restore cleared statistics.
+      if (batch) await request({ type: 'filtered', ...batch, revision });
       if (touchedIds.length) await request({ type: 'touch', videoIds: touchedIds, revision });
     } catch (error) {
-      if (revision === state.revision) { ids.forEach(id => filtered.add(id)); touchedIds.forEach(id => touches.add(id)); }
+      if (revision === state.revision) { if (batch) filtered.restore(batch); touchedIds.forEach(id => touches.add(id)); }
       onAutomaticError(error);
     } finally { flushing = false; }
   }
   const counters = setInterval(() => {
     if (day !== localDay()) {
-      // Flush yesterday's pending observations before counting a new local day.
-      filtered.clear(); seenToday.clear(); day = localDay(); cards.forEach(decorate);
+      // Keep yesterday's pending batches; rendered cards can count on the new day.
+      day = localDay(); cards.forEach(decorate);
     }
     void flushCounters();
   }, 5000);
@@ -174,18 +186,56 @@ async function start(): Promise<void> {
     return true;
   };
   chrome.runtime.onMessage.addListener(messageListener);
-  window.addEventListener('pagehide', () => {
+  return () => {
     void flushCounters(); observer.stop(); tracker.stop(); refiller.stop(); stopNavigation(); clearInterval(counters);
     videoMenu.stop();
     promotionalFilter.clear();
     homeShortsFilter.clear();
+    homeLivestreamFilter.clear();
     playlistFilter.clear();
     if (pruneTimer) clearTimeout(pruneTimer);
-    chrome.storage.onChanged.removeListener(storageListener);
-    chrome.runtime.onMessage.removeListener(messageListener);
+    removeStorageListener();
+    try { chrome.runtime?.onMessage?.removeListener(messageListener); }
+    catch { /* Continue DOM cleanup even if Chrome has invalidated this context. */ }
     document.removeEventListener('visibilitychange', onVisibility);
     for (const element of cards.keys()) unregister(element);
-  }, { once: true });
+  };
 }
-window.addEventListener('pageshow', event => { if (event.persisted) void start().catch(showError); });
-void start().catch(showError);
+
+function excludedPage(): boolean {
+  const url = new URL(location.href);
+  const path = url.pathname.replace(/\/+$/, '');
+  return path === '/feed/history' || path === '/playlist'
+    || /^\/(?:@[^/]+|(?:channel|c|user)\/[^/]+)(?:\/|$)/.test(path);
+}
+
+let generation = 0;
+let activeUrl: string | undefined;
+let stopPage: (() => void) | undefined;
+function suspendPage(): void {
+  generation++;
+  activeUrl = undefined;
+  const stop = stopPage;
+  stopPage = undefined;
+  stop?.();
+  if (toastTimer) clearTimeout(toastTimer);
+  document.querySelector('.aw-toast')?.remove();
+}
+function syncPage(): void {
+  // Keep the existing playback and counter session for normal YouTube navigation.
+  if (!excludedPage() && stopPage) return;
+  if (activeUrl === location.href) return;
+  suspendPage();
+  if (excludedPage()) return;
+  activeUrl = location.href;
+  const current = generation;
+  const isCurrent = (): boolean => current === generation && activeUrl === location.href && !excludedPage();
+  void start(isCurrent).then(stop => {
+    if (isCurrent()) stopPage = stop;
+    else stop?.();
+  }).catch(error => { if (isCurrent()) showError(error); });
+}
+watchNavigation(() => { if (excludedPage()) suspendPage(); }, syncPage);
+window.addEventListener('pagehide', suspendPage);
+window.addEventListener('pageshow', event => { if (event.persisted) syncPage(); });
+syncPage();

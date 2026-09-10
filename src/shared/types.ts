@@ -8,7 +8,10 @@ export interface Settings {
   showWatchedDate: boolean;
   hidePromotionalSections: boolean;
   hideHomeShorts: boolean;
+  hideHomeLivestreams: boolean;
   hidePlaylists: boolean;
+  minimumViews: number;
+  blockedTitleTerms: string[];
 }
 export type Segment = [number, number];
 export interface VideoRecord {
@@ -46,11 +49,11 @@ export interface Summary {
 export type Request =
   | { type: 'snapshot' }
   | { type: 'summary' }
-  | { type: 'settings'; settings: Settings }
+  | { type: 'settings'; settings: Partial<Settings> }
   | { type: 'mark'; videoId: string; watched: boolean; title?: string }
   | { type: 'progress'; videoId: string; title?: string; duration: number; segments: Segment[]; revision: number }
   | { type: 'import'; videos: { videoId: string; title?: string; progress: number }[]; revision: number }
   | { type: 'touch'; videoIds: string[]; revision: number }
-  | { type: 'filtered'; videoIds: string[]; revision: number }
+  | { type: 'filtered'; videoIds: string[]; revision: number; day?: string }
   | { type: 'clear' };
 export type Reply<T> = { ok: true; data: T } | { ok: false; error: string };

@@ -33,3 +33,5 @@ ytd-rich-grid-renderer > #contents:has(> .aw-hidden, > .aw-promo-hidden, > .aw-h
 .aw-control:focus-visible { outline: 2px solid #a4f3cb; outline-offset: 3px; }
 .aw-toast { position: fixed; bottom: 24px; left: 24px; z-index: 2147483647; max-width: 380px; padding: 12px 18px; background: #182823; color: #edfff3; border: 1px solid #8acba5; border-radius: 10px; font: 14px/1.5 system-ui, sans-serif; box-shadow: 0 4px 20px #0005; }
 @media (prefers-reduced-motion: reduce) { .aw-dim, .aw-control { transition: none; } }
+
+.aw-home-live-hidden { display: none !important; }

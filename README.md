@@ -8,7 +8,7 @@ Turn on **Hide Playables and topic suggestions** to remove YouTube Playables (â€
 
 **Hide Shorts on Home** is a separate, optional toggle that removes all Shorts shelves and individual Shorts cards from the main Home feed, regardless of watched status. The dedicated Shorts player, search results, subscriptions, and channel pages remain available. It defaults off, restores content immediately when disabled, and is independent of **Apply to Shorts**, which controls watched detection/decorations for Shorts.
 
-**Hide playlists and Mixes** removes playlist collection cards and YouTube's auto-generated Mix cards from supported feeds, search results, channel grids, and recommendations. It defaults off and works with every display mode. Individual videos within playlists, the playlist playback panel, and normal video URLs containing `list=` or `start_radio=1` stay available. Detection uses playlist/radio renderer types, playlist thumbnail/title links, and collection or playlist/Mix thumbnail badges rather than URL parameters alone. Recognized collection cards are excluded from per-video watched tracking and scan imports, so watching the first video does not mark the entire playlist watched. Hidden collections do not inflate video statistics, and supported Home grids fill the resulting gaps.
+**Hide playlists and Mixes** removes playlist collection cards and YouTube's auto-generated Mix cards from supported feeds, search results, and recommendations. It defaults off and works with every display mode. Individual videos within playlists, the playlist playback panel, and normal video URLs containing `list=` or `start_radio=1` stay available. Detection uses playlist/radio renderer types, playlist thumbnail/title links, and collection or playlist/Mix thumbnail badges rather than URL parameters alone. Recognized collection cards are excluded from per-video watched tracking and scan imports, so watching the first video does not mark the entire playlist watched. Hidden collections do not inflate video statistics, and supported Home grids fill the resulting gaps.
 
 ## Run it
 
@@ -46,7 +46,7 @@ With the preview server running, `http://127.0.0.1:4177/continuation-fixture` ex
 
 ## Behaviour
 
-- Finds video cards on Home, recommendations/sidebar, Search, Subscriptions, channel videos, playlists, related grids, and supported Shorts layouts. Video IDs come from video links, including links with playlist, time, or share parameters.
+- Finds video cards on Home, recommendations/sidebar, Search, Subscriptions, related grids, and supported Shorts layouts. Video IDs come from video links, including links with playlist, time, or share parameters.
 - Tracks the actual, unique playback segments observed on watch pages and supported Shorts players. A restored playback offset, a seek, or repeatedly watching the same segment does not inflate progress. Segments persist across tabs and sessions, even before the watched threshold is reached.
 - Marks a video as watched when those segments reach your threshold. The first recorded mark date is preserved and progress continues updating. Changing the threshold affects future automatic marks and UI hints; it does not retroactively erase watched records.
 - Optionally uses YouTube's thumbnail progress bars at the same threshold. These transient hints do **not** create a database entry and never supply a made-up watch date.
@@ -59,7 +59,7 @@ With the preview server running, `http://127.0.0.1:4177/continuation-fixture` ex
 
 ### Hide + refill
 
-Select **Hide + refill** in the popup or Options. It hides watched cards just like Hide, then asks YouTube to load more through its existing continuation controls. Supported scopes are Home, Search, Subscriptions, channel Videos/Shorts/Streams tabs, and watch-page recommendations. It does not paginate comments, playlists, or the Shorts playback viewer.
+Select **Hide + refill** in the popup or Options. It hides watched cards just like Hide, then asks YouTube to load more through its existing continuation controls. Supported scopes are Home, Search, Subscriptions, and watch-page recommendations. It does not paginate comments, playlists, or the Shorts playback viewer.
 
 The extension only attempts a refill if it has hidden cards in that feed, fewer than 12 distinct remaining video IDs are below the current scroll position, and the remaining cards extend less than 1.5 viewport heights down the screen. It stops once enough content is available. The original Badge + Dim default is unchanged.
 
@@ -130,14 +130,16 @@ The service worker serializes mutations from all tabs through one queue; data al
 
 - A tab takes one initial snapshot, then updates only changed records from `chrome.storage.onChanged`.
 - Playback is sampled once a second, written about every 15 seconds, on pause/end/navigation, and immediately when qualifying. Individual video keys avoid rewriting the entire history. Intervals merge and are capped at 128 per record; extreme fragmentation discards the shortest intervals conservatively.
-- Recommendation `lastSeen` writes happen at most hourly per record. Filter/touch messages batch every five seconds, capped at 500 IDs. Daily deduplication persists only the current day's IDs plus all-time totals.
+- Recommendation `lastSeen` writes happen at most hourly per record. Filter/touch messages batch every five seconds, capped at 500 IDs. Daily ID buckets remain in local storage until history is cleared, alongside all-time totals. Batches retain the local observation date so retries and delayed tabs do not double-count earlier days or move observations into today's total. Storage use grows with filtering activity as well as watched records.
 - New/changed subtrees are queued and coalesced. Full discovery runs on initialization and navigation, not on every mutation. Attribute observation excludes classes and extension-owned text; decorators do not create observer feedback loops. Removed cards are pruned, and record updates address cards through a video-ID index.
 - A revision token invalidates stale automatic messages when history is reset or a video is manually marked unwatched. Already-running tabs cannot undo a reset with an old progress batch. This conservatively discards pending unsaved segments in other tabs too.
 - No automatic history eviction: quota failures leave existing data intact and surface an error. Chrome's default local-storage quota is 10 MB; the UI shows usage. This supports thousands of typical records, with capacity depending on title lengths and interval fragmentation. No `unlimitedStorage` permission is requested. See [Chrome storage documentation](https://developer.chrome.com/docs/extensions/reference/api/storage).
 
+History clearing uses a temporary numeric reset marker in `chrome.storage.session`, which has a separate quota and survives service-worker restarts. The worker completes any pending reset before handling more messages, frees local record space, and then persists the new history revision. Settings are preserved. The marker contains no video data and is removed after completion.
+
 ## Privacy and permissions
 
-Everything is stored in **`chrome.storage.local` on this Chrome profile**. No analytics, backend, YouTube API, Google account access, browsing-history permission, cookies permission, or Chrome sync. The extension makes no direct network requests. In Hide + refill mode it can trigger YouTube's own recommendation loading, which causes YouTube to make its usual requests to YouTube. No additional permissions or third-party services are used.
+History, settings, and statistics are stored in **`chrome.storage.local` on this Chrome profile**. Clearing history temporarily uses a numeric reset marker in `chrome.storage.session`. No analytics, backend, YouTube API, Google account access, browsing-history permission, cookies permission, or Chrome sync. The extension makes no direct network requests. In Hide + refill mode it can trigger YouTube's own recommendation loading, which causes YouTube to make its usual requests to YouTube. No additional permissions or third-party services are used.
 
 - `storage`: persist settings, video IDs/titles, observed playback segments, dates, and statistics.
 - `contextMenus`: manual watched/unwatched commands.
@@ -157,7 +159,7 @@ Automated validation covers pure logic, renderer fixtures, actual decorator inte
 
 Before distributing through the Chrome Web Store, load `dist/` and perform this live smoke check:
 
-1. Visit Home, Search, Subscriptions, a channel, a playlist/watch page and Shorts. Mark one card and check duplicate cards agree without a reload.
+1. Visit Home, Search, Subscriptions, a watch page and Shorts. Mark one card and check duplicate cards agree without a reload. Navigate to a channel/profile, playlist, or History and confirm all videos remain visible and extension controls disappear. Return Home and confirm filtering resumes.
 2. Change each mode, disable/re-enable, mark unwatched, and confirm the red-bar hint stays suppressed. Check light/dark themes and keyboard access.
 3. Set the threshold to 10%, play a fresh finite video, seek ahead, and verify only actual playback qualifies. Let autoplay move to the next video. Check a normal pre-roll/mid-roll ad and a live/DVR stream.
 4. Scan a rendered page with playback bars. Check imported videos have no invented date. Check today's count does not grow on repeated mutations/navigation for the same IDs.
@@ -168,3 +170,9 @@ Before distributing through the Chrome Web Store, load `dist/` and perform this 
 9. Enable Hide playlists and Mixes. Check collection cards disappear and return when disabled. Play an individual video in a playlist and confirm playback and its playlist panel remain usable. Watching its first video must not mark the collection watched.
 
 Keep `src/youtube/selectors.ts` and the DOM fixtures together when adapting to a changed layout. Store packaging/publishing is separate from the unpacked build; no extension was installed into your Chrome profile or published automatically.
+
+## License
+
+Already Watched is available under the [MIT License](LICENSE).
+
+The extension leaves History, all playlist pages including Watch Later, and channel/profile pages with their tabs untouched. Filtering resumes when you return to a supported feed.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Already Watched",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A quieter YouTube feed. Mark, dim, or hide videos you've already watched. Private and entirely local.",
   "minimum_chrome_version": "114",
   "permissions": ["storage", "contextMenus"],

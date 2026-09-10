@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy · Already Watched</title>
+  <meta name="description" content="How Already Watched stores YouTube watch history locally, uses permissions, and lets you clear your data.">
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #233b32; background: #f6f7f2; color-scheme: light; }
+    * { box-sizing: border-box; } body { margin: 0; border-top: 7px solid #1d4e3c; }
+    main { max-width: 780px; padding: 52px 28px 64px; margin: auto; }
+    header { display: flex; align-items: center; gap: 12px; font-size: 1.15rem; font-weight: 700; }
+    .icon { background: #1d4e3c; color: #d8f4c9; width: 42px; height: 42px; border-radius: 12px; padding: 7px; }
+    .dot { color: #a94f2e; } h1 { font-size: clamp(2.3rem, 6vw, 3.5rem); letter-spacing: -.05em; margin: 45px 0 12px; line-height: 1.1; }
+    .date { font-size: .875rem; color: #5a6b61; } .summary { padding: 22px 24px; margin: 28px 0 36px; background: #e9efdf; border-left: 4px solid #32674e; border-radius: 0 12px 12px 0; font-size: 1.125rem; line-height: 1.6; }
+    h2 { font-size: 1.25rem; margin: 32px 0 10px; letter-spacing: -.02em; } p, li { font-size: 1rem; line-height: 1.75; } ul { padding-left: 24px; } li { margin: 6px 0; }
+    a { color: #205b41; text-underline-offset: 3px; overflow-wrap: anywhere; } a:focus-visible { outline: 3px solid #a94f2e; outline-offset: 4px; }
+    code { font-size: .9em; overflow-wrap: anywhere; } footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid #ccd8cd; color: #5a6b61; font-size: .875rem; line-height: 1.7; }
+  </style>
+</head>
+<body><main>
+  <header><svg class="icon" aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16s5-8 13-8 13 8 13 8-5 8-13 8S3 16 3 16Z"/><path d="m11 16 3 3 7-7"/></svg><span>Already Watched<span class="dot">.</span></span></header>
+  <h1>Privacy policy</h1>
+  <p class="date">Effective 6 September 2026 · Extension version 1.0.0</p>
+  <div class="summary">Your watched-video history stays in your Chrome profile. Already Watched has no account system, analytics service, or server that receives your extension data.</div>
+  <h2>What the extension handles</h2>
+  <p>Already Watched helps you recognise and filter videos you have already watched on desktop YouTube. To provide these features, it reads video links and titles, thumbnail progress indicators, supported feed elements, and video-player playback activity on YouTube pages.</p>
+  <p>The extension stores the following locally:</p>
+  <ul>
+    <li>Video IDs and available titles; watched or unwatched status; and manual unwatched overrides.</li>
+    <li>Observed playback segments and progress; watch, import, and last-seen timestamps where available; and whether a record came from playback, a manual action, or a page scan.</li>
+    <li>Your settings, such as the watched threshold, display mode, optional feed filters.</li>
+    <li>Local statistics, including mark counts, daily filtered-video IDs, aggregate filtering totals, and storage status.</li>
+  </ul>
+  <p>It does not request your Google login, cookies, payment details, or Chrome browsing-history database. It does not read pages on other websites. Scanning a page reads qualifying progress indicators already displayed on that page; it does not fetch your Google account's watch-history database.</p>
+  <h2>How this information is used</h2>
+  <p>Data is used to mark, dim, or hide watched videos, remember progress and preferences, apply your chosen feed filters, and show statistics inside the extension. Playback tracking observes played segments, rather than treating a seek ahead as time watched.</p>
+  <h2>Storage, sharing, and network requests</h2>
+  <p>Extension data is saved using <code>chrome.storage.local</code> in the Chrome profile where you installed Already Watched. It is not synced with Chrome Sync or sent to the developer, advertisers, or other third parties. We do not sell it, use it for advertising, or use it to make credit or lending decisions.</p>
+  <p>All extension scripts and assets are bundled with the installation. The extension makes no direct network requests. If you select Hide + refill, it can trigger YouTube's existing recommendation-loading controls. YouTube then makes its normal requests under its own privacy policy; Already Watched does not transmit its stored history with those requests.</p>
+  <h2>Why these permissions are needed</h2>
+  <ul>
+    <li><strong>Storage:</strong> saves settings, video history, playback progress, and statistics on your device.</li>
+    <li><strong>Context menus:</strong> adds watched and unwatched commands to supported YouTube video links and pages.</li>
+    <li><strong>YouTube access:</strong> runs the extension on <code>https://www.youtube.com/*</code> and <code>https://youtube.com/*</code>, reads the video information needed for its features, updates feed presentation, and connects the popup's scan command to the active YouTube tab.</li>
+  </ul>
+  <h2>Your controls and data retention</h2>
+  <p>Records remain locally until you clear them or uninstall the extension; there is no automatic expiry. You can mark a video unwatched to reset its recorded playback and suppress existing YouTube progress hints for that video. This retains a local override so it is not immediately imported again.</p>
+  <p>In the popup or Options page, select <strong>Clear watched history</strong> and confirm <strong>Clear history</strong> to remove video records, partial playback, manual overrides, and statistics. This keeps your settings. YouTube's own progress indicators may still appear if that setting is enabled, and subsequent playback can create new records.</p>
+  <p>Switch off the extension's enabled toggle to pause automatic tracking and filtering. Existing data remains stored, and manual marking commands remain available. Uninstalling the extension removes its local extension data.</p>
+  <h2>Security</h2>
+  <p>Already Watched does not add its own encryption to local records. Someone with access to your Chrome profile may be able to inspect them. Protect your device and browser profile accordingly.</p>
+  <h2>Limited Use</h2>
+  <p>Already Watched uses information obtained through Chrome APIs only to provide its stated, user-facing features, in accordance with the Chrome Web Store User Data Policy, including the Limited Use requirements.</p>
+  <h2 id="support">This page and support</h2>
+  <p>This privacy page contains no analytics scripts, advertising, forms, or embedded third-party content. Its hosting provider may process ordinary web-request information to deliver and protect the page. Visiting this page does not give it access to your extension history.</p>
+  <p>If you email support, we receive the information you choose to send and use it to respond. Please do not send your watch history or other sensitive information unless it is necessary for your question.</p>
+  <p>Privacy questions and support: <a href="mailto:hello@alex.codes">hello@alex.codes</a>.</p>
+  <h2>Changes</h2>
+  <p>Updates to this policy will be posted here with a revised effective date. Changes to the extension's data handling will be reflected in its disclosures.</p>
+  <footer>Already Watched is an independent extension and is not affiliated with or endorsed by YouTube or Google.</footer>
+</main></body></html>
