@@ -14,6 +14,7 @@ function fixture(tag: string, body = '<a id="thumbnail" href="/watch?v=dQw4w9WgX
   return document.body.firstElementChild as HTMLElement;
 }
 beforeEach(() => {
+  history.replaceState({}, '', '/');
   settings = { ...DEFAULT_SETTINGS, hidePlaylists: true };
   filter = new PlaylistFilter(() => settings);
 });
@@ -61,6 +62,23 @@ describe('playlist and Mix detection', () => {
 });
 
 describe('playlist filter lifecycle', () => {
+  it.each(['/@creator', '/@creator/playlists', '/@creator/videos', '/channel/UCexample', '/channel/UCexample/playlists', '/c/creator/playlists', '/user/creator/playlists'])('keeps playlists visible on channel page %s', path => {
+    history.replaceState({}, '', path);
+    const card = fixture('ytd-grid-playlist-renderer');
+    filter.update(document);
+    expect(card.classList.contains('aw-playlist-hidden')).toBe(false);
+  });
+  it('restores playlists when navigating to a channel and filters again on Home', () => {
+    const card = fixture('ytd-grid-playlist-renderer');
+    filter.update(document);
+    expect(card.classList.contains('aw-playlist-hidden')).toBe(true);
+    history.replaceState({}, '', '/@creator/playlists');
+    filter.update(card);
+    expect(card.classList.contains('aw-playlist-hidden')).toBe(false);
+    history.replaceState({}, '', '/');
+    filter.update(document);
+    expect(card.classList.contains('aw-playlist-hidden')).toBe(true);
+  });
   it('defaults off and preserves explicit preferences', () => {
     expect(normalizeSettings({}).hidePlaylists).toBe(false);
     expect(normalizeSettings(settings).hidePlaylists).toBe(true);
