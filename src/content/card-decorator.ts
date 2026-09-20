@@ -11,7 +11,7 @@ export class CardDecorator {
     if (existing) {
       existing.badge.remove();
       existing.button.remove();
-      existing.thumbnail.classList.remove('aw-thumbnail');
+      existing.thumbnail.classList.remove('aw-thumbnail', 'aw-thumbnail-positioned');
     }
     element.classList.remove('aw-card', 'aw-dim', 'aw-hidden');
     this.decorations.delete(element);
@@ -29,6 +29,11 @@ export class CardDecorator {
       button.type = 'button'; button.className = 'aw-control';
       card.thumbnail.append(badge, button);
       card.thumbnail.classList.add('aw-thumbnail');
+      // Keep YouTube's absolute positioning, which reserves the thumbnail ratio.
+      const position = getComputedStyle(card.thumbnail).position;
+      if (position === 'static' || !position) {
+        card.thumbnail.classList.add('aw-thumbnail-positioned');
+      }
       decoration = { thumbnail: card.thumbnail, badge, button, videoId: card.videoId };
       this.decorations.set(card.element, decoration);
     }

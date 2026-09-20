@@ -11,13 +11,22 @@ export function isHomePage(url: string): boolean {
   } catch { return false; }
 }
 
+export function isSearchPage(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ['www.youtube.com', 'youtube.com'].includes(parsed.hostname) && parsed.pathname === '/results';
+  } catch { return false; }
+}
+
 export class HomeShortsFilter {
   private hidden = new Set<HTMLElement>();
   constructor(private settings: () => Settings) {}
 
   update(root: Element | Document): void {
     const settings = this.settings();
-    if (!settings.enabled || !settings.hideHomeShorts || !isHomePage(location.href)) { this.clear(); return; }
+    const active = (settings.hideHomeShorts && isHomePage(location.href))
+      || (settings.hideSearchShorts && isSearchPage(location.href));
+    if (!settings.enabled || !active) { this.clear(); return; }
     const candidates = findPromotionalSections(root);
     const shelves = `${SELECTORS.homeShortsShelves},${SELECTORS.homeShortsGridShelves}`;
     root.querySelectorAll<HTMLElement>(shelves).forEach(element => candidates.add(element));
