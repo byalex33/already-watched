@@ -112,6 +112,7 @@ export function App() {
     <ContentFilterSettings settings={settings} onSave={update} />
     <section className="toggles"><h2>Feed filters</h2>
       <Toggle label="Hide playlists and Mixes" description="Hide playlist and Mix cards. Keep individual videos." checked={settings.hidePlaylists} onChange={hidePlaylists => { void update({ hidePlaylists }); }} />
+      <Toggle label="Hide Shorts in Search" description="Hide Shorts cards and sections in search results." checked={settings.hideSearchShorts} onChange={hideSearchShorts => { void update({ hideSearchShorts }); }} />
       <Toggle label="Hide Shorts on Home" description="Hide Shorts cards and sections on the Home page." checked={settings.hideHomeShorts} onChange={hideHomeShorts => { void update({ hideHomeShorts }); }} />
       <Toggle label="Hide games and topic suggestions" description="Hide Playables and “Explore more topics” sections." checked={settings.hidePromotionalSections} onChange={hidePromotionalSections => { void update({ hidePromotionalSections }); }} />
     </section>

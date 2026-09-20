@@ -6,7 +6,7 @@ Choose **Hide + refill** to hide watched cards and try to bring in more recommen
 
 Turn on **Hide Playables and topic suggestions** to remove YouTube Playables (“Instant games, no downloads”) and “Explore more topics” sections. This optional toggle works with every display mode, updates dynamically, and restores the sections when switched off or the extension is disabled. It defaults off for existing and new installs. Matching is scoped to section headings, so videos discussing Playables are not removed. English heading fallbacks and known renderer adapters are used; unrecognized/localized layouts may need an adapter update. These sections do not count as watched videos or add to filtering statistics.
 
-**Hide Shorts on Home** is a separate, optional toggle that removes all Shorts shelves and individual Shorts cards from the main Home feed, regardless of watched status. The dedicated Shorts player, search results, subscriptions, and channel pages remain available. It defaults off, restores content immediately when disabled, and is independent of **Apply to Shorts**, which controls watched detection/decorations for Shorts.
+**Hide Shorts on Home** is a separate, optional toggle that removes all Shorts shelves and individual Shorts cards from the main Home feed, regardless of watched status. The dedicated Shorts player, subscriptions, and channel pages remain available. **Hide Shorts in Search** independently removes Shorts shelves and cards from search results and defaults on. It defaults off, restores content immediately when disabled, and is independent of **Apply to Shorts**, which controls watched detection/decorations for Shorts.
 
 **Hide playlists and Mixes** removes playlist collection cards and YouTube's auto-generated Mix cards from supported feeds, search results, and recommendations. It defaults off and works with every display mode. Individual videos within playlists, the playlist playback panel, and normal video URLs containing `list=` or `start_radio=1` stay available. Detection uses playlist/radio renderer types, playlist thumbnail/title links, and collection or playlist/Mix thumbnail badges rather than URL parameters alone. Recognized collection cards are excluded from per-video watched tracking and scan imports, so watching the first video does not mark the entire playlist watched. Hidden collections do not inflate video statistics, and supported Home grids fill the resulting gaps.
 
@@ -91,7 +91,7 @@ src/content/
   video-tracker.ts             HTML5 playback continuity, ads/live guards, periodic saves
   feed-refiller.ts             sparse-feed checks, continuation cooldowns and load budgets
   promotional-filter.ts       reversible Playables/topic-suggestion section filtering
-  home-shorts-filter.ts       Home-only Shorts shelves/cards, with SPA restoration
+  home-shorts-filter.ts       Home/Search Shorts shelves/cards, with SPA restoration
   playlist-filter.ts         reversible playlist and Mix collection-card filtering
   card-detector.ts             maps supported renderer elements to video cards
   card-decorator.ts            idempotent badges, dim/hide and manual controls
@@ -166,7 +166,7 @@ Before distributing through the Chrome Web Store, load `dist/` and perform this 
 5. Clear history while playback is open in another tab; old segments must not restore the record. Reload the extension, refresh tabs, and verify settings and new records persist.
 6. Select Hide + refill on a feed with mostly watched cards. Check new cards are processed, your scroll position stays put, and the extension stops after five attempts or two responses with no new IDs. Switch modes or navigate while loading; no temporary continuation styles should remain. Confirm watch-page refills load recommendations, not comments.
 7. Enable Hide Playables and topic suggestions; both sections should disappear with their outer spacing. Disable the toggle and confirm they return. In Hide modes, check later videos fill partial rows before full-width shelves, including after resizing the window.
-8. Enable Hide Shorts on Home, verify Home has no Shorts shelves/cards, then navigate to Search, a channel's Shorts tab, and the dedicated Shorts page. Those surfaces should remain available. Return Home and toggle the setting off to restore the shelves.
+8. Enable Hide Shorts on Home, verify Home has no Shorts shelves/cards, verify Hide Shorts in Search independently controls search results, then navigate to a channel's Shorts tab and the dedicated Shorts page. Those surfaces should remain available. Return Home and toggle the setting off to restore the shelves.
 9. Enable Hide playlists and Mixes. Check collection cards disappear and return when disabled. Play an individual video in a playlist and confirm playback and its playlist panel remain usable. Watching its first video must not mark the collection watched.
 
 Keep `src/youtube/selectors.ts` and the DOM fixtures together when adapting to a changed layout. Store packaging/publishing is separate from the unpacked build; no extension was installed into your Chrome profile or published automatically.

@@ -97,7 +97,8 @@ describe('reference compatibility regressions', () => {
     decorator.apply(card, false, undefined, DEFAULT_SETTINGS);
     expect(wrapper.classList.contains('aw-hidden')).toBe(false);
   });
-  it('recognizes v2 Shorts, hides only the Home shelf, and restores recycled mixed grids', async () => {
+  it.each(['/', '/results?search_query=test'])('recognizes v2 Shorts and restores recycled mixed grids on %s', async path => {
+    history.replaceState({}, '', path);
     vi.useFakeTimers(); const root = fixture('shorts-grid');
     expect(detectCard(root)).toMatchObject({ shorts: true, title: 'Short video' });
     let settings = { ...DEFAULT_SETTINGS, hideHomeShorts: true };
@@ -117,7 +118,8 @@ describe('reference compatibility regressions', () => {
     expect(document.querySelector('.aw-home-shorts-hidden')).toBeNull();
     filter.clear();
   });
-  it('keeps mixed grid shelves and ordinary videos intact', () => {
+  it.each(['/', '/results?search_query=test'])('keeps mixed grid shelves and ordinary videos intact on %s', path => {
+    history.replaceState({}, '', path);
     const root = fixture('shorts-grid');
     const shelf = root.closest<HTMLElement>('grid-shelf-view-model')!;
     shelf.insertAdjacentHTML('beforeend', '<yt-lockup-view-model><a id="thumbnail" href="/watch?v=abcdefghijk"><img></a></yt-lockup-view-model>');

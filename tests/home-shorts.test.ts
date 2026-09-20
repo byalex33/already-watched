@@ -30,7 +30,7 @@ describe('Home-only Shorts hiding', () => {
     document.querySelector('ytd-rich-grid-renderer > #contents')!.append(short);
     filter.update(short); expect(short.classList.contains('aw-home-shorts-hidden')).toBe(true);
   });
-  it.each(['/shorts/dQw4w9WgXcQ', '/results?search_query=shorts', '/@creator/shorts', '/feed/subscriptions', '/watch?v=dQw4w9WgXcQ'])('restores Shorts when navigating to %s', path => {
+  it.each(['/shorts/dQw4w9WgXcQ', '/@creator/shorts', '/feed/subscriptions', '/watch?v=dQw4w9WgXcQ'])('restores Shorts when navigating to %s', path => {
     filter.update(document); history.replaceState({}, '', path); filter.update(document);
     expect(document.querySelector('.aw-home-shorts-hidden')).toBeNull();
   });

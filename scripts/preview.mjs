@@ -21,12 +21,12 @@ const types = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css',
 createServer(async (req, res) => {
   try {
     const path = new URL(req.url ?? '/', 'http://localhost').pathname;
-    if (path === '/continuation-fixture' || path === '/grid-fixture') {
-      const fixture = path === '/grid-fixture' ? 'grid' : 'continuation';
+    if (path === '/continuation-fixture' || path === '/grid-fixture' || path === '/search-fixture') {
+      const fixture = path === '/grid-fixture' ? 'grid' : path === '/search-fixture' ? 'search' : 'continuation';
       res.setHeader('Content-Type', 'text/html'); res.end(await readFile(`tests/browser/${fixture}.html`)); return;
     }
-    if (path === '/continuation-fixture.js' || path === '/grid-fixture.js') {
-      const fixture = path === '/grid-fixture.js' ? 'grid' : 'continuation';
+    if (path === '/continuation-fixture.js' || path === '/grid-fixture.js' || path === '/search-fixture.js') {
+      const fixture = path === '/grid-fixture.js' ? 'grid' : path === '/search-fixture.js' ? 'search' : 'continuation';
       const result = await build({ entryPoints: [`tests/browser/${fixture}.ts`], bundle: true, write: false, format: 'iife', target: 'chrome114' });
       res.setHeader('Content-Type', 'text/javascript'); res.end(result.outputFiles[0].contents); return;
     }

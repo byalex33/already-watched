@@ -8,6 +8,7 @@ export interface Settings {
   showWatchedDate: boolean;
   hidePromotionalSections: boolean;
   hideHomeShorts: boolean;
+  hideSearchShorts: boolean;
   hidePlaylists: boolean;
   minimumViews: number;
   blockedTitleTerms: string[];

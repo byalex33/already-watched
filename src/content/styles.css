@@ -1,4 +1,4 @@
-.aw-thumbnail { position: relative !important; }
+.aw-thumbnail-positioned { position: relative; }
 .aw-badge { position: absolute; z-index: 4; left: 8px; bottom: 8px; padding: 5px 8px; border-radius: 5px; background: rgba(15, 24, 22, .94); color: #c7f6dd; border: 1px solid rgba(187, 239, 211, .35); box-shadow: 0 1px 5px #0005; font: 600 10px/1.5 system-ui, sans-serif; letter-spacing: .06em; white-space: pre-line; pointer-events: none; text-align: left; }
 .aw-badge[hidden] { display: none !important; }
 .aw-dim { opacity: .57 !important; transition: opacity .15s ease; }
