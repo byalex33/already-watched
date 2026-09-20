@@ -14,6 +14,8 @@ export function normalizeSettings(value: unknown): Settings {
     hideHomeLivestreams: typeof input.hideHomeLivestreams === 'boolean' ? input.hideHomeLivestreams : DEFAULT_SETTINGS.hideHomeLivestreams,
     hideHomeShorts: typeof input.hideHomeShorts === 'boolean' ? input.hideHomeShorts : DEFAULT_SETTINGS.hideHomeShorts,
     hideSearchShorts: typeof input.hideSearchShorts === 'boolean' ? input.hideSearchShorts : DEFAULT_SETTINGS.hideSearchShorts,
+    // Before this setting existed, Search followed the global watched display mode.
+    hideWatchedInSearch: typeof input.hideWatchedInSearch === 'boolean' ? input.hideWatchedInSearch : mode === 'hide' || mode === 'hide-refill',
     minimumViews: typeof input.minimumViews === 'number' && Number.isFinite(input.minimumViews) ? Math.floor(Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, input.minimumViews))) : 0,
     blockedTitleTerms: Array.isArray(input.blockedTitleTerms) ? [...new Set(input.blockedTitleTerms.filter((term): term is string => typeof term === 'string').map(term => term.trim().slice(0, 300)).filter(Boolean))].slice(0, 200) : [],
     hidePlaylists: typeof input.hidePlaylists === 'boolean' ? input.hidePlaylists : DEFAULT_SETTINGS.hidePlaylists

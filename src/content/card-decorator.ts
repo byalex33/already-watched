@@ -1,3 +1,4 @@
+import { filterScope } from './filter-scope';
 import { matchesContentFilters } from '../shared/content-filters';
 import { formatWatchedDate } from '../shared/date';
 import type { Settings, VideoRecord } from '../shared/types';
@@ -40,8 +41,12 @@ export class CardDecorator {
     const { badge, button } = decoration;
     card.element.classList.add('aw-card');
     card.element.classList.toggle('aw-dim', watched && ['dim', 'badge-dim'].includes(settings.displayMode));
-    card.element.classList.toggle('aw-hidden', matchesContentFilters(card, settings) || (watched && ['hide', 'hide-refill'].includes(settings.displayMode)));
-    badge.hidden = !watched || !['badge', 'badge-dim'].includes(settings.displayMode);
+    const scope = filterScope(card.element);
+    const hideMode = ['hide', 'hide-refill'].includes(settings.displayMode);
+    const hideWatched = scope === 'search' ? settings.hideWatchedInSearch : scope === 'recommendations' && hideMode;
+    card.element.classList.toggle('aw-hidden', !!scope && (matchesContentFilters(card, settings) || (watched && hideWatched)));
+    // Hide modes fall back to a watched badge when the browsing context keeps videos visible.
+    badge.hidden = !watched || !(hideMode && !hideWatched || ['badge', 'badge-dim'].includes(settings.displayMode));
     const date = settings.showWatchedDate ? formatWatchedDate(record?.watchedAt) : null;
     const badgeText = `WATCHED${date ? `\n${date}` : ''}`;
     if (badge.textContent !== badgeText) badge.textContent = badgeText;

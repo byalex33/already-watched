@@ -26,13 +26,13 @@ function ContentFilterSettings({ settings, onSave }: { settings: Settings; onSav
       <textarea id="blocked-titles" rows={4} value={terms} disabled={savingFilters} onChange={event => { setTerms(event.target.value); setDirty(true); }} placeholder={'reaction\nlove island\n#shorts'} aria-describedby="titles-hint" />
       <p className="hint" id="titles-hint">Add one word or phrase per line. Matches any part of a title, regardless of capitals. Up to 200 entries, 300 characters each.</p>
       <button disabled={!dirty || savingFilters} type="submit">{savingFilters ? 'Saving…' : 'Save filters'}</button>
-      <p className="hint">These filters hide matching videos while the extension is enabled. Turn on “Include Shorts” to filter Shorts too.</p>
+      <p className="hint">These filters hide matching recommendations and search results while the extension is enabled. Turn on “Include Shorts” to filter Shorts too.</p>
     </form>
   </section>;
 }
 const MODES: { value: DisplayMode; label: string; description: string }[] = [
   { value: 'badge', label: 'Show a badge', description: 'Keep videos visible with a watched label.' }, { value: 'dim', label: 'Dim videos', description: 'Fade watched videos in the feed.' },
-  { value: 'hide', label: 'Hide videos', description: 'Remove watched videos from the feed.' }, { value: 'badge-dim', label: 'Dim and show a badge', description: 'Fade videos and add a watched label.' },
+  { value: 'hide', label: 'Hide videos', description: 'Hide watched Home and watch-page recommendations.' }, { value: 'badge-dim', label: 'Dim and show a badge', description: 'Fade videos and add a watched label.' },
   { value: 'hide-refill', label: 'Hide and load more', description: 'Try to load more videos to fill the gaps.' }
 ];
 export function App() {
@@ -101,13 +101,17 @@ export function App() {
     <header><div className="brand-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M3 16s5-8 13-8 13 8 13 8-5 8-13 8S3 16 3 16Z" /><path d="m11 16 3 3 7-7" /></svg></div><div><h1>Already Watched</h1><p>Manage watched videos on YouTube.</p></div><span className={`live-dot ${settings.enabled ? '' : 'paused'}`} title={settings.enabled ? 'Enabled' : 'Paused'} /></header>
     <section className="enable-panel"><Toggle label="Enable Already Watched" description={settings.enabled ? 'Tracking and filters are on.' : 'Tracking and filtering are paused.'} checked={settings.enabled} onChange={enabled => { void update({ enabled }); }} /></section>
     <section className="stats" aria-label="Local statistics"><div><strong>{summary.watchedCount.toLocaleString()}</strong><span>watched videos</span></div><div><strong>{summary.filteredToday.toLocaleString()}</strong><span>filtered today</span></div><div><strong>{summary.filteredAllTime.toLocaleString()}</strong><span>filtered in total</span></div></section>
-    <section className="settings-section"><div className="section-heading"><h2>Watched videos</h2><span>{saving ? 'Saving…' : 'Saved automatically'}</span></div>
+    <section className="settings-section"><div className="section-heading"><h2>Watched recommendations</h2><span>{saving ? 'Saving…' : 'Saved automatically'}</span></div>
       <div className="mode-grid" role="radiogroup" aria-label="Watched-video display mode">{MODES.map(mode => <label key={mode.value} className={`mode ${mode.value === 'hide-refill' ? 'mode-refill' : ''} ${settings.displayMode === mode.value ? 'selected' : ''}`}><input type="radio" name="display-mode" checked={settings.displayMode === mode.value} onChange={() => { void update({ displayMode: mode.value }); }} /><span className="mode-copy"><span className="setting-label">{mode.label}</span><span className="description">{mode.description}</span></span></label>)}</div>
       <p className="hint">{settings.displayMode === 'hide-refill' ? 'Tries up to 5 more page loads. YouTube may not have more videos to show.' : settings.displayMode === 'hide' ? 'Choose another option to show watched videos again.' : 'Use the button on a thumbnail to mark a video as watched or unwatched.'}</p>
       <div className="threshold-heading"><label htmlFor="threshold">Mark as watched after</label><output htmlFor="threshold">{threshold}%</output></div>
       <input id="threshold" className="range" type="range" min="10" max="100" step="1" value={threshold} onChange={event => { const value = Number(event.target.value); setThreshold(value); void update({ threshold: value }); }} />
       <div className="range-labels"><span>10%</span><span>100%</span></div>
       <p className="hint">The percentage of a video you play. Skipped sections don’t count.</p>
+    </section>
+    <section className="toggles"><h2>Search</h2>
+      <Toggle label="Hide watched videos in Search" description="Off keeps watched search results visible. Independent of recommendation display and Shorts filtering." checked={settings.hideWatchedInSearch} onChange={hideWatchedInSearch => { void update({ hideWatchedInSearch }); }} />
+      <p className="hint">History, Liked Videos, playlists, subscriptions and channel pages always keep videos visible.</p>
     </section>
     <ContentFilterSettings settings={settings} onSave={update} />
     <section className="toggles"><h2>Feed filters</h2>
@@ -127,6 +131,6 @@ export function App() {
       {confirmClear && <div className="confirmation" role="alert"><p>Clear saved history, manual changes, and statistics? This cannot be undone. Videos may still be marked watched using YouTube progress bars.</p><div><button className="danger" disabled={busy} onClick={() => { void clearHistory(); }}>Clear history</button><button disabled={busy} onClick={() => setConfirmClear(false)}>Keep history</button></div></div>}
       {status && <p className="notice" role="status">{status}</p>}{(error || summary.error) && <p className="error" role="alert">{error || summary.error}</p>}
     </section>
-    <footer><p className="privacy-note"><svg aria-hidden="true" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="2" /><path d="M5 7V5a3 3 0 0 1 6 0v2" /></svg>History and settings are saved on this device.</p><p>Already Watched is open source. <a href="https://github.com/byalex33/already-watched" target="_blank" rel="noreferrer">Help contribute on GitHub ↗</a></p></footer>
+    <footer><p>Version {chrome.runtime.getManifest?.().version ?? 'preview'}</p><p className="privacy-note"><svg aria-hidden="true" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="2" /><path d="M5 7V5a3 3 0 0 1 6 0v2" /></svg>History and settings are saved on this device.</p><p>Already Watched is open source. <a href="https://github.com/byalex33/already-watched" target="_blank" rel="noreferrer">Help contribute on GitHub ↗</a></p></footer>
   </main>;
 }

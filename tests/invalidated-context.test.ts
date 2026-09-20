@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS } from '../src/shared/constants';
 
-it('cleans up navigation after extension APIs disappear', async () => {
+it('cleans up a departing page after extension APIs disappear', async () => {
   vi.useFakeTimers();
   const api = {
     runtime: { id: 'test', sendMessage: vi.fn(async () => ({ ok: true, data: { settings: DEFAULT_SETTINGS, records: {}, revision: 0 } })), onMessage: { addListener: vi.fn(), removeListener: vi.fn() } },
@@ -19,7 +19,7 @@ it('cleans up navigation after extension APIs disappear', async () => {
     expect(document.querySelector('.aw-control')).not.toBeNull();
     vi.stubGlobal('chrome', { runtime: {} });
     history.replaceState({}, '', '/feed/history');
-    document.dispatchEvent(new Event('yt-navigate-finish'));
+    window.dispatchEvent(new Event('pagehide'));
     await vi.advanceTimersByTimeAsync(500);
     expect(errors).toEqual([]);
     expect(document.querySelector('[class*="aw-"]')).toBeNull();
@@ -35,14 +35,14 @@ it('cleans up navigation after extension APIs disappear', async () => {
     api.storage.onChanged.removeListener.mockImplementation(() => { throw new Error('Extension context invalidated.'); });
     api.runtime.onMessage.removeListener.mockImplementation(() => { throw new Error('Extension context invalidated.'); });
     history.replaceState({}, '', '/feed/history');
-    document.dispatchEvent(new Event('yt-navigate-finish'));
+    window.dispatchEvent(new Event('pagehide'));
     await vi.advanceTimersByTimeAsync(500);
     expect(errors).toEqual([]);
     expect(document.querySelector('[class*="aw-"]')).toBeNull();
     api.storage.onChanged.removeListener.mockReset();
     api.runtime.onMessage.removeListener.mockReset();
 
-    // Cleanup also runs if navigation wins the race with snapshot loading.
+    // Cleanup also runs if page shutdown wins the race with snapshot loading.
     for (const rejectSnapshot of [false, true]) {
       let finish!: () => void;
       api.runtime.sendMessage.mockImplementationOnce(() => new Promise((resolve, reject) => {
@@ -54,7 +54,7 @@ it('cleans up navigation after extension APIs disappear', async () => {
       window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
       vi.stubGlobal('chrome', { runtime: {} });
       history.replaceState({}, '', '/feed/history');
-      document.dispatchEvent(new Event('yt-navigate-finish'));
+      window.dispatchEvent(new Event('pagehide'));
       finish();
       await vi.advanceTimersByTimeAsync(500);
       expect(errors).toEqual([]);

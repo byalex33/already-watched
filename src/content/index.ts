@@ -1,3 +1,4 @@
+import { filterScope } from './filter-scope';
 import { HomeLivestreamFilter } from './home-livestream-filter';
 import { matchesContentFilters } from '../shared/content-filters';
 import { REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
@@ -23,7 +24,6 @@ import { VideoMenu } from './video-menu';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 function showError(error: unknown): void {
-  if (excludedPage()) return;
   let toast = document.querySelector<HTMLElement>('.aw-toast');
   if (!toast) { toast = document.createElement('div'); toast.className = 'aw-toast'; toast.setAttribute('role', 'status'); document.body.append(toast); }
   toast.textContent = `Already Watched: ${errorMessage(error)}`;
@@ -83,7 +83,7 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
     const watched = isWatched(record, card.progress, card.shorts, state.settings);
     decorator.apply(card, watched, record, state.settings);
     if (card.element.closest(SELECTORS.sectionHidden)) return;
-    if (watched || matchesContentFilters(card, state.settings)) filtered.observe(card.videoId);
+    if (filterScope(card.element) && (watched || matchesContentFilters(card, state.settings))) filtered.observe(card.videoId);
     if (state.settings.enabled && record && Date.now() - record.lastSeen >= 3_600_000) touches.add(card.videoId);
   }
   function process(roots: Set<HTMLElement>): void {
@@ -202,13 +202,6 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
   };
 }
 
-function excludedPage(): boolean {
-  const url = new URL(location.href);
-  const path = url.pathname.replace(/\/+$/, '');
-  return path === '/feed/history' || path === '/playlist'
-    || /^\/(?:@[^/]+|(?:channel|c|user)\/[^/]+)(?:\/|$)/.test(path);
-}
-
 let generation = 0;
 let activeUrl: string | undefined;
 let stopPage: (() => void) | undefined;
@@ -223,19 +216,18 @@ function suspendPage(): void {
 }
 function syncPage(): void {
   // Keep the existing playback and counter session for normal YouTube navigation.
-  if (!excludedPage() && stopPage) return;
+  if (stopPage) return;
   if (activeUrl === location.href) return;
   suspendPage();
-  if (excludedPage()) return;
   activeUrl = location.href;
   const current = generation;
-  const isCurrent = (): boolean => current === generation && activeUrl === location.href && !excludedPage();
+  const isCurrent = (): boolean => current === generation && activeUrl === location.href;
   void start(isCurrent).then(stop => {
     if (isCurrent()) stopPage = stop;
     else stop?.();
   }).catch(error => { if (isCurrent()) showError(error); });
 }
-watchNavigation(() => { if (excludedPage()) suspendPage(); }, syncPage);
+watchNavigation(() => {}, syncPage);
 window.addEventListener('pagehide', suspendPage);
 window.addEventListener('pageshow', event => { if (event.persisted) syncPage(); });
 syncPage();

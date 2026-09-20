@@ -1,3 +1,4 @@
+import manifest from '../manifest.json';
 import { afterEach, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -25,7 +26,7 @@ it('keeps edits from two Options windows before their storage refreshes arrive',
       set: async (values: Record<string, unknown>) => { Object.assign(data, structuredClone(values)); },
       getBytesInUse: async () => 0
     }
-  }, runtime: { sendMessage: async (message: Request) => ({ ok: true, data: await repository.dispatch(message) }) } });
+  }, runtime: { getManifest: () => manifest, sendMessage: async (message: Request) => ({ ok: true, data: await repository.dispatch(message) }) } });
   const windows = [document.createElement('div'), document.createElement('div')];
   await act(async () => {
     for (const container of windows) {
@@ -33,10 +34,11 @@ it('keeps edits from two Options windows before their storage refreshes arrive',
       const root = createRoot(container); roots.push(root); root.render(<App />);
     }
   });
-  for (const [index, label] of ['Hide Shorts on Home', 'Hide playlists and Mixes'].entries()) {
-    const toggle = [...windows[index]!.querySelectorAll('label')].find(element => element.textContent?.includes(label))?.querySelector('input');
+  for (const [index, label] of ['Hide Shorts on Home', 'Hide playlists and Mixes', 'Hide watched videos in Search'].entries()) {
+    const toggle = [...windows[index % 2]!.querySelectorAll('label')].find(element => element.textContent?.includes(label))?.querySelector('input');
     expect(toggle).toBeDefined();
     await act(async () => { toggle!.click(); });
   }
-  expect((await repository.dispatch({ type: 'summary' }) as Summary).settings).toMatchObject({ hideHomeShorts: true, hidePlaylists: true });
+  expect(windows[0]!.textContent).toContain(`Version ${manifest.version}`);
+  expect((await repository.dispatch({ type: 'summary' }) as Summary).settings).toMatchObject({ hideHomeShorts: true, hidePlaylists: true, hideWatchedInSearch: true });
 });

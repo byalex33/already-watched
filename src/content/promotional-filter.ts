@@ -1,3 +1,4 @@
+import { filterScope } from './filter-scope';
 import type { Settings } from '../shared/types';
 import { findPromotionalSections, isPromotionalSection, promotionalContainer } from '../youtube/promotional-sections';
 
@@ -10,7 +11,7 @@ export class PromotionalFilter {
     if (!settings.enabled || !settings.hidePromotionalSections) { this.clear(); return; }
     const sections = findPromotionalSections(root);
     const matched = new Set<HTMLElement>();
-    for (const section of sections) if (isPromotionalSection(section)) matched.add(promotionalContainer(section));
+    for (const section of sections) if (filterScope(section) && isPromotionalSection(section)) matched.add(promotionalContainer(section));
     for (const element of this.hidden) {
       if (!element.isConnected || (sections.has(element) && !matched.has(element))) {
         element.classList.remove('aw-promo-hidden'); this.hidden.delete(element);

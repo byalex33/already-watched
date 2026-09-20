@@ -1,6 +1,6 @@
 {
   "name": "already-watched",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,9 +10,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run test && npm run build"
+    "check": "npm run test && npm run build",
+    "version": "node scripts/sync-version.mjs"
   },
-  "dependencies": { "react": "^19.1.1", "react-dom": "^19.1.1" },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
   "devDependencies": {
     "@types/chrome": "^0.1.24",
     "@types/react": "^19.1.13",
