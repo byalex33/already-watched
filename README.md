@@ -2,7 +2,11 @@
 
 A local-first Chrome extension for a less repetitive YouTube feed. Watched recommendations get a thumbnail badge, gentle dimming, both, or can be hidden entirely. Default: **Badge + Dim, 70% watched**. Watched cards stay clickable and return to full opacity on hover or keyboard focus.
 
-Choose **Hide + refill** to hide watched cards and try to bring in more recommendations when the remaining feed is short.
+Version **1.0.2** keeps watched videos visible in History, Liked Videos, Watch Later, playlists, subscriptions, and all channel pages. Watched indicators and tracking remain available. Hide modes apply to Home and watch-page recommendations only.
+
+**Hide watched videos in Search** is a separate toggle. It defaults off for new installs. Existing installations inherit their previous Search behavior from their saved display mode, then the toggle operates independently. **Hide Shorts in Search** remains a separate setting.
+
+Choose **Hide + refill** to hide watched recommendations and try to bring in more when the remaining feed is short.
 
 Turn on **Hide Playables and topic suggestions** to remove YouTube Playables (“Instant games, no downloads”) and “Explore more topics” sections. This optional toggle works with every display mode, updates dynamically, and restores the sections when switched off or the extension is disabled. It defaults off for existing and new installs. Matching is scoped to section headings, so videos discussing Playables are not removed. English heading fallbacks and known renderer adapters are used; unrecognized/localized layouts may need an adapter update. These sections do not count as watched videos or add to filtering statistics.
 
@@ -59,7 +63,7 @@ With the preview server running, `http://127.0.0.1:4177/continuation-fixture` ex
 
 ### Hide + refill
 
-Select **Hide + refill** in the popup or Options. It hides watched cards just like Hide, then asks YouTube to load more through its existing continuation controls. Supported scopes are Home, Search, Subscriptions, and watch-page recommendations. It does not paginate comments, playlists, or the Shorts playback viewer.
+Select **Hide + refill** in the popup or Options. It hides watched cards just like Hide, then asks YouTube to load more through its existing continuation controls. Supported scopes are Home, Search when cards are filtered, and watch-page recommendations. It does not paginate comments, playlists, or the Shorts playback viewer.
 
 The extension only attempts a refill if it has hidden cards in that feed, fewer than 12 distinct remaining video IDs are below the current scroll position, and the remaining cards extend less than 1.5 viewport heights down the screen. It stops once enough content is available. The original Badge + Dim default is unchanged.
 
@@ -159,7 +163,7 @@ Automated validation covers pure logic, renderer fixtures, actual decorator inte
 
 Before distributing through the Chrome Web Store, load `dist/` and perform this live smoke check:
 
-1. Visit Home, Search, Subscriptions, a watch page and Shorts. Mark one card and check duplicate cards agree without a reload. Navigate to a channel/profile, playlist, or History and confirm all videos remain visible and extension controls disappear. Return Home and confirm filtering resumes.
+1. Visit Home, Search, Subscriptions, a watch page and Shorts. Mark one card and check duplicate cards agree without a reload. Navigate to a channel/profile, playlist, or History and confirm all videos remain visible with watched indicators. Return Home and confirm filtering resumes.
 2. Change each mode, disable/re-enable, mark unwatched, and confirm the red-bar hint stays suppressed. Check light/dark themes and keyboard access.
 3. Set the threshold to 10%, play a fresh finite video, seek ahead, and verify only actual playback qualifies. Let autoplay move to the next video. Check a normal pre-roll/mid-roll ad and a live/DVR stream.
 4. Scan a rendered page with playback bars. Check imported videos have no invented date. Check today's count does not grow on repeated mutations/navigation for the same IDs.
@@ -175,4 +179,8 @@ Keep `src/youtube/selectors.ts` and the DOM fixtures together when adapting to a
 
 Already Watched is available under the [MIT License](LICENSE).
 
-The extension leaves History, all playlist pages including Watch Later, and channel/profile pages with their tabs untouched. Filtering resumes when you return to a supported feed.
+The extension keeps videos visible on History, Liked Videos, all playlists including Watch Later, subscriptions, and channel/profile pages. Title/view and section filters also leave these browsing pages visible. Watched badges replace hiding on these pages. Filtering resumes on Home and watch-page recommendations; Search follows its separate preference.
+
+## Versioning
+
+`package.json` is the release-version source. For fixes, run `npm version patch --no-git-tag-version`, then update `CHANGELOG.md`. The version lifecycle hook synchronizes `manifest.json`; npm updates the lockfile. Builds reject mismatched package/manifest versions, the popup reads the loaded manifest, and ZIP names use the built manifest version. Use 1.x patch increments for fixes; this release does not change the major version.

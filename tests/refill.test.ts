@@ -112,7 +112,7 @@ describe('refill mode', () => {
     settings.displayMode = 'badge'; controller.schedule();
     settings.displayMode = 'hide-refill'; controller.schedule(); await advance(30000);
     expect(load).toHaveBeenCalledTimes(2);
-    controller.navigationStart(); history.replaceState({}, '', '/feed/subscriptions'); controller.navigationFinish();
+    controller.navigationStart(); history.replaceState({}, '', '/?feed=another'); controller.navigationFinish();
     await advance(); expect(load).toHaveBeenCalledTimes(3);
   });
   it.each(['badge', 'dim', 'hide', 'badge-dim'] as const)('never refills in %s mode', async displayMode => {
@@ -164,10 +164,10 @@ describe('refill mode', () => {
 });
 
 describe('continuation adapters', () => {
-  it.each(['/', '/results?search_query=music', '/feed/subscriptions', '/@creator/videos', '/channel/UCabc/shorts', '/watch?v=dQw4w9WgXcQ'])('supports %s', path => {
+  it.each(['/', '/results?search_query=music', '/watch?v=dQw4w9WgXcQ'])('supports %s', path => {
     expect(supportsRefill(`https://www.youtube.com${path}`)).toBe(true);
   });
-  it.each(['/shorts/dQw4w9WgXcQ', '/feed/history', '/playlist?list=PLabc', '/account', '/@creator/about'])('leaves %s alone', path => {
+  it.each(['/feed/subscriptions', '/@creator/videos', '/channel/UCabc/shorts', '/shorts/dQw4w9WgXcQ', '/feed/history', '/playlist?list=PLabc', '/account', '/@creator/about'])('leaves %s alone', path => {
     expect(supportsRefill(`https://www.youtube.com${path}`)).toBe(false);
   });
   it('scopes watch-page refill to recommendations, excluding comments and playlist pagination', () => {

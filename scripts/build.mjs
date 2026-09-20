@@ -1,5 +1,8 @@
 import { build, context } from 'esbuild';
-import { mkdir, copyFile, cp } from 'node:fs/promises';
+import { mkdir, copyFile, cp, readFile } from 'node:fs/promises';
+const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
+if (manifest.version !== version) throw new Error('Version mismatch. Run npm run version to sync manifest.json with package.json.');
 await mkdir('dist', { recursive: true });
 await copyFile('manifest.json', 'dist/manifest.json');
 await copyFile('LICENSE', 'dist/LICENSE');

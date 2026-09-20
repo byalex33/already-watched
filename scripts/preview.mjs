@@ -4,13 +4,14 @@ import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { build } from 'esbuild';
 const root = resolve('dist');
+const { version } = JSON.parse(await readFile('package.json', 'utf8'));
 const mock = `
 const listeners = new Set();
 let settings = { enabled:true, displayMode:'badge-dim', threshold:70, useYouTubeProgress:true, applyToShorts:true, showWatchedDate:true, hidePromotionalSections:false, hideHomeShorts:false, hidePlaylists:false };
 let watchedCount = 1248, filteredToday = 32, filteredAllTime = 864;
 window.chrome = {
   storage: { onChanged: { addListener:fn=>listeners.add(fn), removeListener:fn=>listeners.delete(fn) } },
-  runtime: { sendMessage: async message => {
+  runtime: { getManifest: () => ({ version: ${JSON.stringify(version)} }), sendMessage: async message => {
     if(message.type==='settings') { settings = { ...settings, ...message.settings }; listeners.forEach(fn=>fn()); }
     if(message.type==='clear') { watchedCount=0; filteredToday=0; filteredAllTime=0; listeners.forEach(fn=>fn()); }
     return { ok:true, data:{ settings, watchedCount, filteredToday, filteredAllTime, totalMarked:watchedCount, storageBytes:248512 } };

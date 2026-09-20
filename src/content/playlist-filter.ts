@@ -1,3 +1,4 @@
+import { filterScope } from './filter-scope';
 import type { Settings } from '../shared/types';
 import { findPlaylistCandidates, isPlaylistCard } from '../youtube/playlist-detection';
 
@@ -7,11 +8,10 @@ export class PlaylistFilter {
 
   update(root: Element | Document): void {
     const settings = this.settings();
-    const channelPage = /^\/(?:@[^/]+|(?:channel|c|user)\/[^/]+)(?:\/|$)/.test(location.pathname);
-    if (!settings.enabled || !settings.hidePlaylists || channelPage) { this.clear(); return; }
+    if (!settings.enabled || !settings.hidePlaylists) { this.clear(); return; }
     this.prune();
     for (const card of findPlaylistCandidates(root)) {
-      const hide = isPlaylistCard(card);
+      const hide = !!filterScope(card) && isPlaylistCard(card);
       card.classList.toggle('aw-playlist-hidden', hide);
       if (hide) this.hidden.add(card); else this.hidden.delete(card);
     }

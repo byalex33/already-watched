@@ -4,8 +4,7 @@ export function supportsRefill(url: string): boolean {
   try {
     const { hostname, pathname } = new URL(url);
     if (!['www.youtube.com', 'youtube.com'].includes(hostname)) return false;
-    return ['/', '/results', '/feed/subscriptions', '/watch'].includes(pathname)
-      || /^\/(?:@[^/]+|(?:channel|c|user)\/[^/]+)\/(?:videos|shorts|streams)\/?$/.test(pathname);
+    return ['/', '/results', '/watch'].includes(pathname);
   } catch { return false; }
 }
 
