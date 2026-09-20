@@ -11,6 +11,7 @@ export function normalizeSettings(value: unknown): Settings {
     applyToShorts: typeof input.applyToShorts === 'boolean' ? input.applyToShorts : DEFAULT_SETTINGS.applyToShorts,
     showWatchedDate: typeof input.showWatchedDate === 'boolean' ? input.showWatchedDate : DEFAULT_SETTINGS.showWatchedDate,
     hidePromotionalSections: typeof input.hidePromotionalSections === 'boolean' ? input.hidePromotionalSections : DEFAULT_SETTINGS.hidePromotionalSections,
+    hideHomeLivestreams: typeof input.hideHomeLivestreams === 'boolean' ? input.hideHomeLivestreams : DEFAULT_SETTINGS.hideHomeLivestreams,
     hideHomeShorts: typeof input.hideHomeShorts === 'boolean' ? input.hideHomeShorts : DEFAULT_SETTINGS.hideHomeShorts,
     hideSearchShorts: typeof input.hideSearchShorts === 'boolean' ? input.hideSearchShorts : DEFAULT_SETTINGS.hideSearchShorts,
     minimumViews: typeof input.minimumViews === 'number' && Number.isFinite(input.minimumViews) ? Math.floor(Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, input.minimumViews))) : 0,

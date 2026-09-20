@@ -9,6 +9,7 @@ export interface Settings {
   hidePromotionalSections: boolean;
   hideHomeShorts: boolean;
   hideSearchShorts: boolean;
+  hideHomeLivestreams: boolean;
   hidePlaylists: boolean;
   minimumViews: number;
   blockedTitleTerms: string[];

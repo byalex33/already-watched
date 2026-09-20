@@ -7,7 +7,8 @@ export class PlaylistFilter {
 
   update(root: Element | Document): void {
     const settings = this.settings();
-    if (!settings.enabled || !settings.hidePlaylists) { this.clear(); return; }
+    const channelPage = /^\/(?:@[^/]+|(?:channel|c|user)\/[^/]+)(?:\/|$)/.test(location.pathname);
+    if (!settings.enabled || !settings.hidePlaylists || channelPage) { this.clear(); return; }
     this.prune();
     for (const card of findPlaylistCandidates(root)) {
       const hide = isPlaylistCard(card);

@@ -40,7 +40,7 @@ export const SELECTORS = {
   homeShortsShelves: 'ytd-rich-shelf-renderer[is-shorts], ytd-reel-shelf-renderer',
   homeShortsGridShelves: 'grid-shelf-view-model',
   shortsLockups: 'yt-shorts-lockup-view-model, ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2',
-  sectionHidden: '.aw-promo-hidden, .aw-home-shorts-hidden, .aw-playlist-hidden',
+  sectionHidden: '.aw-home-live-hidden, .aw-promo-hidden, .aw-home-shorts-hidden, .aw-playlist-hidden',
   extensionOwned: '.aw-badge, .aw-control, .aw-toast'
 } as const;
 
