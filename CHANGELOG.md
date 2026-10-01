@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Restore minimum-views filtering for YouTube cards that display abbreviated counts such as "54k" and put "54 thousand views" in the accessibility label.
+- Recheck filtering when YouTube updates a view-count accessibility label. Keep videos with unknown counts visible.
+
 ## 1.0.2
 
 - Keep watched videos visible in History, Liked Videos, playlists, subscriptions, and every channel page. Retain watched indicators and tracking.
