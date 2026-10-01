@@ -38,7 +38,7 @@ export class CardObserver {
     });
   }
   start(): void {
-    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true, attributeFilter: ['href', 'style', 'aria-valuenow', 'aria-valuemax', 'now-playing-badge', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts', 'overlay-style', 'class'] });
+    this.observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true, attributeFilter: ['href', 'style', 'aria-label', 'aria-valuenow', 'aria-valuemax', 'now-playing-badge', 'hidden', 'is-loading', 'aria-busy', 'active', 'is-shorts', 'overlay-style', 'class'] });
     this.scan();
   }
   scan(): void {
