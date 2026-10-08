@@ -18,7 +18,9 @@ export function normalizeSettings(value: unknown): Settings {
     hideWatchedInSearch: typeof input.hideWatchedInSearch === 'boolean' ? input.hideWatchedInSearch : mode === 'hide' || mode === 'hide-refill',
     minimumViews: typeof input.minimumViews === 'number' && Number.isFinite(input.minimumViews) ? Math.floor(Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, input.minimumViews))) : 0,
     blockedTitleTerms: Array.isArray(input.blockedTitleTerms) ? [...new Set(input.blockedTitleTerms.filter((term): term is string => typeof term === 'string').map(term => term.trim().slice(0, 300)).filter(Boolean))].slice(0, 200) : [],
-    hidePlaylists: typeof input.hidePlaylists === 'boolean' ? input.hidePlaylists : DEFAULT_SETTINGS.hidePlaylists
+    hidePlaylists: typeof input.hidePlaylists === 'boolean' ? input.hidePlaylists : DEFAULT_SETTINGS.hidePlaylists,
+    hideRepeatsAfter: typeof input.hideRepeatsAfter === 'number' && Number.isFinite(input.hideRepeatsAfter) ? Math.floor(Math.max(0, Math.min(20, input.hideRepeatsAfter))) : DEFAULT_SETTINGS.hideRepeatsAfter,
+    channelCap: typeof input.channelCap === 'number' && Number.isFinite(input.channelCap) ? Math.floor(Math.max(0, Math.min(10, input.channelCap))) : DEFAULT_SETTINGS.channelCap
   };
 }
 export async function getSettings(): Promise<Settings> {

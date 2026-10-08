@@ -1,7 +1,8 @@
-import { FILTERED_PREFIX, ERROR_KEY, REVISION_KEY, SETTINGS_KEY, STATS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { FILTERED_PREFIX, ERROR_KEY, HOME_STATS_KEY, IMPRESSION_PREFIX, REVISION_KEY, SETTINGS_KEY, STATS_KEY, VIDEO_PREFIX } from '../shared/constants';
 import { isVideoId } from '../youtube/video-id';
 import { localDay } from '../shared/date';
 import type { Request, Snapshot, Stats, Summary, VideoRecord } from '../shared/types';
+import { expiredImpressions, impressionKey, normalizeHomeStats, readImpressions, recordHome, summarizeHome } from '../storage/impression-store';
 import { getSettings, normalizeSettings } from '../storage/settings-store';
 import { addFiltered, emptyStats, normalizeStats } from '../storage/stats-store';
 import { getRecord, playbackRecord, readRecords, videoKey } from '../storage/watched-store';
@@ -34,7 +35,7 @@ export class Repository {
     const revision: unknown = pending[PENDING_RESET_KEY];
     if (typeof revision !== 'number' || !Number.isSafeInteger(revision) || revision < 1) return;
     const data = await chrome.storage.local.get(null);
-    await chrome.storage.local.remove(Object.keys(data).filter(key => key.startsWith(VIDEO_PREFIX) || key.startsWith(FILTERED_PREFIX) || key === STATS_KEY || key === ERROR_KEY));
+    await chrome.storage.local.remove(Object.keys(data).filter(key => key.startsWith(VIDEO_PREFIX) || key.startsWith(FILTERED_PREFIX) || key.startsWith(IMPRESSION_PREFIX) || key === STATS_KEY || key === HOME_STATS_KEY || key === ERROR_KEY));
     await this.persist({ [REVISION_KEY]: revision, [STATS_KEY]: emptyStats() });
     await chrome.storage.session.remove(PENDING_RESET_KEY);
   }
@@ -44,7 +45,8 @@ export class Repository {
       const data = await chrome.storage.local.get(null);
       const records = readRecords(data);
       const settings = normalizeSettings(data[SETTINGS_KEY]);
-      if (message.type === 'snapshot') return { settings, records, revision: Number(data[REVISION_KEY]) || 0 } satisfies Snapshot;
+      const impressions = readImpressions(data);
+      if (message.type === 'snapshot') return { settings, records, impressions, revision: Number(data[REVISION_KEY]) || 0 } satisfies Snapshot;
       const stats = normalizeStats(data[STATS_KEY]);
       const today = localDay();
       const dailyIds = data[FILTERED_PREFIX + today];
@@ -53,6 +55,7 @@ export class Repository {
         filteredToday: Array.isArray(dailyIds) ? new Set(dailyIds.filter(isVideoId)).size : stats.day === today ? stats.filteredIds.length : 0,
         filteredAllTime: stats.filteredAllTime, totalMarked: stats.totalMarked,
         storageBytes: await chrome.storage.local.getBytesInUse(null),
+        home: summarizeHome(impressions, normalizeHomeStats(data[HOME_STATS_KEY])),
         error: typeof data[ERROR_KEY] === 'string' ? data[ERROR_KEY] : undefined
       } satisfies Summary;
     }
@@ -61,7 +64,7 @@ export class Repository {
       await this.persist({ [SETTINGS_KEY]: settings });
       return settings;
     }
-    const meta = await chrome.storage.local.get([STATS_KEY, REVISION_KEY]);
+    const meta = await chrome.storage.local.get([STATS_KEY, HOME_STATS_KEY, REVISION_KEY]);
     const revision = Number(meta[REVISION_KEY]) || 0;
     if ('revision' in message && message.revision !== revision) return { stale: true };
     const stats = normalizeStats(meta[STATS_KEY]);
@@ -87,6 +90,20 @@ export class Repository {
         const legacy = stats.day !== day && !Array.isArray(days[legacyKey]) ? { [legacyKey]: stats.filteredIds } : {};
         await this.persist({ ...legacy, [key]: next.filteredIds, [STATS_KEY]: current });
       }
+      return null;
+    }
+    if (message.type === 'home') {
+      if (!(await getSettings()).enabled) return null;
+      const now = Date.now();
+      // A new visit is a cheap moment to forget stale impressions.
+      const ids = [...message.served.map(video => video.videoId), ...message.shown];
+      const impressions = readImpressions(await chrome.storage.local.get(message.visits ? null : ids.map(impressionKey)));
+      const { updates, stats: homeStats } = recordHome(impressions, normalizeHomeStats(meta[HOME_STATS_KEY]), message, now);
+      const values: Record<string, unknown> = { [HOME_STATS_KEY]: homeStats };
+      for (const impression of Object.values(updates)) values[impressionKey(impression.videoId)] = impression;
+      await this.persist(values);
+      const expired = message.visits ? expiredImpressions(impressions, now).filter(id => !(id in updates)) : [];
+      if (expired.length) await chrome.storage.local.remove(expired.map(impressionKey));
       return null;
     }
     if (message.type === 'touch') {

@@ -7,14 +7,19 @@ const root = resolve('dist');
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
 const mock = `
 const listeners = new Set();
-let settings = { enabled:true, displayMode:'badge-dim', threshold:70, useYouTubeProgress:true, applyToShorts:true, showWatchedDate:true, hidePromotionalSections:false, hideHomeShorts:false, hidePlaylists:false };
+let settings = { enabled:true, displayMode:'badge-dim', threshold:70, useYouTubeProgress:true, applyToShorts:true, showWatchedDate:true, hidePromotionalSections:false, hideHomeShorts:false, hideSearchShorts:true, hideWatchedInSearch:false, hideHomeLivestreams:false, hidePlaylists:false, minimumViews:0, blockedTitleTerms:[], hideRepeatsAfter:3, channelCap:2 };
 let watchedCount = 1248, filteredToday = 32, filteredAllTime = 864;
+const emptyHome = { visits:0, served:0, distinct:0, repeats:0, watched:0, since:0, top:[] };
+let home = { visits:41, served:1312, distinct:388, repeats:924, watched:146, since:Date.now() - 12 * 86400000, top:[
+  { videoId:'aaaaaaaaaaa', title:'I Built a Working Lego Car Engine (And It Exploded)', served:23 },
+  { videoId:'bbbbbbbbbbb', title:'Why Every Airport Looks the Same', served:19 },
+  { videoId:'ccccccccccc', title:'The Most Satisfying Restoration Ever Filmed', served:17 } ] };
 window.chrome = {
   storage: { onChanged: { addListener:fn=>listeners.add(fn), removeListener:fn=>listeners.delete(fn) } },
   runtime: { getManifest: () => ({ version: ${JSON.stringify(version)} }), sendMessage: async message => {
     if(message.type==='settings') { settings = { ...settings, ...message.settings }; listeners.forEach(fn=>fn()); }
-    if(message.type==='clear') { watchedCount=0; filteredToday=0; filteredAllTime=0; listeners.forEach(fn=>fn()); }
-    return { ok:true, data:{ settings, watchedCount, filteredToday, filteredAllTime, totalMarked:watchedCount, storageBytes:248512 } };
+    if(message.type==='clear') { watchedCount=0; filteredToday=0; filteredAllTime=0; home=emptyHome; listeners.forEach(fn=>fn()); }
+    return { ok:true, data:{ settings, watchedCount, filteredToday, filteredAllTime, totalMarked:watchedCount, storageBytes:248512, home } };
   } },
   tabs: { query: async()=>[{id:1,url:'https://www.youtube.com/'}], sendMessage:async()=>({ok:true,data:{imported:0,detected:0}}) }
 };`;

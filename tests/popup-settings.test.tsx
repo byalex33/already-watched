@@ -34,6 +34,8 @@ it('keeps edits from two Options windows before their storage refreshes arrive',
       const root = createRoot(container); roots.push(root); root.render(<App />);
     }
   });
+  // These switches live on the Filters tab.
+  for (const container of windows) await act(async () => { container.querySelector<HTMLButtonElement>('#tab-filters')!.click(); });
   for (const [index, label] of ['Hide Shorts on Home', 'Hide playlists and Mixes', 'Hide watched videos in Search'].entries()) {
     const toggle = [...windows[index % 2]!.querySelectorAll('label')].find(element => element.textContent?.includes(label))?.querySelector('input');
     expect(toggle).toBeDefined();

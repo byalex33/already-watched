@@ -20,6 +20,13 @@ export function validRequest(input: unknown): input is Request {
       && typeof v.duration === 'number' && Number.isFinite(v.duration) && v.duration > 0
       && Array.isArray(v.segments) && v.segments.length <= 128
       && v.segments.every(s => Array.isArray(s) && s.length === 2 && s.every(n => typeof n === 'number' && Number.isFinite(n)) && s[0] >= 0 && s[1] > s[0] && s[1] <= (v.duration as number));
+    case 'home': return revision() && Number.isSafeInteger(v.visits) && (v.visits as number) >= 0 && (v.visits as number) <= 100
+      && Array.isArray(v.shown) && v.shown.length <= 500 && v.shown.every(isVideoId)
+      && Array.isArray(v.served) && v.served.length <= 500 && v.served.every(item => {
+        if (!item || typeof item !== 'object') return false;
+        const video = item as Record<string, unknown>;
+        return isVideoId(video.videoId) && title(video.title) && typeof video.watched === 'boolean';
+      });
     case 'touch': case 'filtered': return (v.type !== 'filtered' || observationDay()) && revision() && Array.isArray(v.videoIds) && v.videoIds.length <= 500 && v.videoIds.every(isVideoId);
     case 'import': return revision() && Array.isArray(v.videos) && v.videos.length <= 500 && v.videos.every(item => {
       if (!item || typeof item !== 'object') return false;

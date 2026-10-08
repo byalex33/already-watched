@@ -23,7 +23,7 @@ beforeEach(() => {
     paused: { configurable: true, get: () => paused }, readyState: { configurable: true, get: () => 4 },
     currentSrc: { configurable: true, get: () => source }
   });
-  state = { settings: { ...DEFAULT_SETTINGS }, records: {}, revision: 0 };
+  state = { settings: { ...DEFAULT_SETTINGS }, records: {}, impressions: {}, revision: 0 };
   vi.stubGlobal('chrome', { runtime: { sendMessage: vi.fn(async (message: Request) => { messages.push(message); return { ok: true, data: null }; }) } });
 });
 afterEach(() => { tracker?.stop(); tracker = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
