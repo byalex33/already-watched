@@ -41,6 +41,11 @@ export const SELECTORS = {
   homeShortsGridShelves: 'grid-shelf-view-model',
   shortsLockups: 'yt-shorts-lockup-view-model, ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2',
   sectionHidden: '.aw-home-live-hidden, .aw-promo-hidden, .aw-home-shorts-hidden, .aw-playlist-hidden',
+  feedHidden: '.aw-hidden, .aw-repeat-hidden, .aw-channel-hidden',
+  homeGrid: 'ytd-rich-grid-renderer',
+  homeShelf: 'ytd-rich-section-renderer',
+  channelLinks: 'ytd-channel-name a[href], a[href^="/@"], a[href^="/channel/"], a[href^="/c/"], a[href^="/user/"]',
+  channelName: 'ytd-channel-name #text',
   extensionOwned: '.aw-badge, .aw-control, .aw-toast'
 } as const;
 

@@ -1,7 +1,7 @@
 import { filterScope } from './filter-scope';
 import { HomeLivestreamFilter } from './home-livestream-filter';
 import { matchesContentFilters } from '../shared/content-filters';
-import { REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
+import { IMPRESSION_PREFIX, REVISION_KEY, SETTINGS_KEY, VIDEO_PREFIX } from '../shared/constants';
 import { FilterObservations } from './filter-observations';
 import { localDay } from '../shared/date';
 import { errorMessage, request } from '../shared/messaging';
@@ -10,6 +10,7 @@ import type { Snapshot, VideoRecord } from '../shared/types';
 import { isWatched } from '../shared/watched-state';
 import { normalizeSettings } from '../storage/settings-store';
 import { isVideoRecord } from '../storage/watched-store';
+import { isImpression } from '../storage/impression-store';
 import { CardDecorator } from './card-decorator';
 import { detectCard, findCardRoots, type VideoCard } from './card-detector';
 import { CardObserver } from './observer';
@@ -21,6 +22,7 @@ import { HomeShortsFilter } from './home-shorts-filter';
 import { SELECTORS } from '../youtube/selectors';
 import { PlaylistFilter } from './playlist-filter';
 import { VideoMenu } from './video-menu';
+import { HomeFeed } from './home-feed';
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 function showError(error: unknown): void {
@@ -53,7 +55,10 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
   const touches = new Set<string>();
   let day = localDay();
   let lastAutomaticError = 0;
+  let stopped = false;
   const onAutomaticError = (error: unknown): void => {
+    // The final flush of a departing page may fail once Chrome invalidates the context.
+    if (stopped) return;
     if (Date.now() - lastAutomaticError > 60_000) { showError(error); lastAutomaticError = Date.now(); }
   };
   const decorator = new CardDecorator((card, watched) => {
@@ -70,13 +75,14 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
   const homeLivestreamFilter = new HomeLivestreamFilter(() => state.settings);
   const homeShortsFilter = new HomeShortsFilter(() => state.settings);
   const playlistFilter = new PlaylistFilter(() => state.settings);
+  const homeFeed = new HomeFeed(() => state.settings, () => state.impressions, card => isWatched(state.records[card.videoId], card.progress, card.shorts, state.settings));
   function unregister(element: HTMLElement): void {
     const old = cards.get(element);
     if (old) {
       const group = byVideo.get(old.videoId); group?.delete(element);
       if (!group?.size) byVideo.delete(old.videoId);
     }
-    cards.delete(element); decorator.clear(element);
+    cards.delete(element); decorator.clear(element); homeFeed.forget(element);
   }
   function decorate(card: VideoCard): void {
     const record = state.records[card.videoId];
@@ -97,6 +103,7 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
       if (!group) { group = new Set(); byVideo.set(card.videoId, group); }
       group.add(element); decorate(card);
     }
+    homeFeed.update(cards.values());
     refiller.schedule();
   }
   let pruneTimer: ReturnType<typeof setTimeout> | undefined;
@@ -117,10 +124,17 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
     }
     if (changes[REVISION_KEY]) {
       state.revision = Number(changes[REVISION_KEY].newValue) || 0;
-      tracker.reset(); filtered.clear(); touches.clear();
+      tracker.reset(); filtered.clear(); touches.clear(); homeFeed.reset();
     }
     const changedIds = new Set<string>();
+    let impressionsChanged = false;
     for (const [key, change] of Object.entries(changes)) {
+      if (key.startsWith(IMPRESSION_PREFIX)) {
+        const id = key.slice(IMPRESSION_PREFIX.length);
+        if (isImpression(change.newValue)) state.impressions[id] = change.newValue;
+        else delete state.impressions[id];
+        impressionsChanged = true; continue;
+      }
       if (!key.startsWith(VIDEO_PREFIX)) continue;
       const id = key.slice(VIDEO_PREFIX.length);
       if (isVideoRecord(change.newValue)) state.records[id] = change.newValue;
@@ -131,11 +145,13 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
     else for (const id of changedIds) for (const element of byVideo.get(id) ?? []) {
       const card = cards.get(element); if (card) decorate(card);
     }
+    if (!all && (changedIds.size || impressionsChanged)) homeFeed.update(cards.values());
     refiller.schedule();
   };
   buffered.forEach(receive);
+  homeFeed.navigationFinish();
   observer.start();
-  const stopNavigation = watchNavigation(() => { tracker.navigationStart(); refiller.navigationStart(); videoMenu.reset(); }, () => { tracker.navigationFinish(); refiller.navigationFinish(); observer.scan(); prune(); });
+  const stopNavigation = watchNavigation(() => { tracker.navigationStart(); refiller.navigationStart(); homeFeed.navigationStart(); videoMenu.reset(); }, () => { tracker.navigationFinish(); refiller.navigationFinish(); homeFeed.navigationFinish(); observer.scan(); prune(); });
   let flushing = false;
   async function flushCounters(): Promise<void> {
     if (flushing) return;
@@ -143,12 +159,15 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
     const revision = state.revision;
     const batch = filtered.take();
     const touchedIds = [...touches].slice(0, 500); touchedIds.forEach(id => touches.delete(id));
+    let home = homeFeed.takeBatch();
     try {
       // Stale batches belong to an invalidated generation and must not restore cleared statistics.
       if (batch) await request({ type: 'filtered', ...batch, revision });
       if (touchedIds.length) await request({ type: 'touch', videoIds: touchedIds, revision });
+      if (home) await request({ type: 'home', ...home, revision });
+      home = null;
     } catch (error) {
-      if (revision === state.revision) { if (batch) filtered.restore(batch); touchedIds.forEach(id => touches.add(id)); }
+      if (revision === state.revision) { if (batch) filtered.restore(batch); touchedIds.forEach(id => touches.add(id)); if (home) homeFeed.restoreBatch(home); }
       onAutomaticError(error);
     } finally { flushing = false; }
   }
@@ -187,12 +206,14 @@ async function start(isCurrent: () => boolean): Promise<(() => void) | undefined
   };
   chrome.runtime.onMessage.addListener(messageListener);
   return () => {
+    stopped = true;
     void flushCounters(); observer.stop(); tracker.stop(); refiller.stop(); stopNavigation(); clearInterval(counters);
     videoMenu.stop();
     promotionalFilter.clear();
     homeShortsFilter.clear();
     homeLivestreamFilter.clear();
     playlistFilter.clear();
+    homeFeed.stop();
     if (pruneTimer) clearTimeout(pruneTimer);
     removeStorageListener();
     try { chrome.runtime?.onMessage?.removeListener(messageListener); }

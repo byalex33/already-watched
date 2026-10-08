@@ -8,7 +8,7 @@ Help users recognise watched videos and customise their desktop YouTube feed usi
 
 ## Storage justification
 
-The storage permission saves settings, watched and unwatched video records, video IDs and titles, observed playback segments, timestamps, and local filtering statistics in chrome.storage.local. This lets the extension remember progress and preferences across tabs and browser sessions. Data is not synced or transmitted to the developer. Users can clear local history in the popup or Options page.
+The storage permission saves settings, watched and unwatched video records, video IDs and titles, observed playback segments, timestamps, Home feed impression counts (forgotten after 30 days), and local filtering statistics in chrome.storage.local. This lets the extension remember progress and preferences across tabs and browser sessions. Data is not synced or transmitted to the developer. Users can clear local history in the popup or Options page.
 
 ## Context menus justification
 
@@ -34,7 +34,7 @@ Select these categories where the dashboard uses its standard data-type checkbox
 
 | Category | Selection | Reason |
 | --- | --- | --- |
-| Web history | Yes | YouTube video IDs, available titles, watched status, and watch/import/last-seen dates form local video activity records. No Chrome browsing-history API access is used. |
+| Web history | Yes | YouTube video IDs, available titles, watched status, watch/import/last-seen dates, and how often Home recommended each video form local video activity records. No Chrome browsing-history API access is used. |
 | User activity | Yes | The extension observes player playback segments, progress, and manual watched/unwatched actions for its visible features and statistics. |
 | Website content | Yes | It reads video titles, video links, progress indicators, and supported YouTube page elements to apply filtering and marking. |
 | Personally identifiable information | No | The extension does not collect names, email addresses, phone numbers, or account identifiers. Support email is separately described in the policy. |

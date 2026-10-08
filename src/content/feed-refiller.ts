@@ -71,7 +71,7 @@ export class FeedRefiller {
     for (const card of this.cards()) {
       if (!card.element.isConnected || !feed.contains(card.element) || card.element.closest(SELECTORS.sectionHidden)) continue;
       ids.add(card.videoId);
-      if (card.element.classList.contains('aw-hidden')) { hidden++; continue; }
+      if (card.element.matches(SELECTORS.feedHidden)) { hidden++; continue; }
       const rect = card.element.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0) continue;
       available.add(card.videoId);

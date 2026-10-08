@@ -14,6 +14,10 @@ Turn on **Hide Playables and topic suggestions** to remove YouTube Playables (â€
 
 **Hide playlists and Mixes** removes playlist collection cards and YouTube's auto-generated Mix cards from supported feeds, search results, and recommendations. It defaults off and works with every display mode. Individual videos within playlists, the playlist playback panel, and normal video URLs containing `list=` or `start_radio=1` stay available. Detection uses playlist/radio renderer types, playlist thumbnail/title links, and collection or playlist/Mix thumbnail badges rather than URL parameters alone. Recognized collection cards are excluded from per-video watched tracking and scan imports, so watching the first video does not mark the entire playlist watched. Hidden collections do not inflate video statistics, and supported Home grids fill the resulting gaps.
 
+**Hide repeated recommendations** and **Videos per channel** apply to the Home feed only. Both default off and work with every display mode. A Home *visit* is one navigation to Home (a logo click or returning from a video; scrolling and YouTube's data updates do not count). A video counts as *shown* once per visit when at least 60% of it is on screen and no filter has hidden it. Once a video has been shown on the chosen number of earlier visits, it is hidden on later visits. A video seen during the current visit is never hidden mid-visit. The channel limit counts visible Home cards in page order, so cards hidden for any other reason don't use up a channel's slots. Shelves (Shorts, news and similar sections) are not counted or capped. Home impressions are forgotten 30 days after a video last appeared, so it can come back. In **Hide + refill** mode these hidden cards also trigger refills.
+
+The popup and Options page are organized into **Feed**, **Filters**, **Stats**, and **History** tabs. Each section collapses to a one-line summary of its current settings; the page remembers which sections you opened in this browser.
+
 ## Run it
 
 Requires Node.js 20.19+ (Node 22 LTS recommended), npm, and Chrome 114 or later.
@@ -81,6 +85,8 @@ Refilling is best effort. If YouTube offers no supported continuation, ignores t
 
 **Filtered today** counts unique video IDs matched and decorated/hidden among rendered cards, once per local calendar day across all tabs. It is not a count of impressions, literal DOM nodes, or only the current viewport. Duplicate cards, re-renders, repeated observer events, and SPA navigation do not inflate it. **Filtered all-time** sums these daily unique counts, so a video seen on two different days contributes twice. Settings and watch pages have no filtering effect on YouTube's recommendation algorithm itself.
 
+**Your Home feed, by the numbers** counts what YouTube put on Home while the extension is enabled, including videos it hid: Home visits, recommendations served, different videos, the share that were reruns (served on an earlier visit, or already watched), and the videos served most often. A visible card counts as served when it is first on screen in a visit; a hidden card counts when it is rendered. Each video counts at most once per visit. Different videos are counted when first served; a video forgotten after 30 days counts again if it returns. After five Home visits the popup offers a post written from these numbers, which you can copy or open on X. Nothing is sent anywhere unless you post it yourself.
+
 ## Architecture
 
 ```text
@@ -96,6 +102,7 @@ src/content/
   feed-refiller.ts             sparse-feed checks, continuation cooldowns and load budgets
   promotional-filter.ts       reversible Playables/topic-suggestion section filtering
   home-shorts-filter.ts       Home/Search Shorts shelves/cards, with SPA restoration
+  home-feed.ts                Home visits, on-screen impressions, repeat hiding, channel limit
   playlist-filter.ts         reversible playlist and Mix collection-card filtering
   card-detector.ts             maps supported renderer elements to video cards
   card-decorator.ts            idempotent badges, dim/hide and manual controls
@@ -145,7 +152,7 @@ History clearing uses a temporary numeric reset marker in `chrome.storage.sessio
 
 History, settings, and statistics are stored in **`chrome.storage.local` on this Chrome profile**. Clearing history temporarily uses a numeric reset marker in `chrome.storage.session`. No analytics, backend, YouTube API, Google account access, browsing-history permission, cookies permission, or Chrome sync. The extension makes no direct network requests. In Hide + refill mode it can trigger YouTube's own recommendation loading, which causes YouTube to make its usual requests to YouTube. No additional permissions or third-party services are used.
 
-- `storage`: persist settings, video IDs/titles, observed playback segments, dates, and statistics.
+- `storage`: persist settings, video IDs/titles, observed playback segments, dates, Home feed impressions (video ID, title, counts, last-seen date; forgotten after 30 days), and statistics.
 - `contextMenus`: manual watched/unwatched commands.
 - Access only to `https://www.youtube.com/*` and `https://youtube.com/*`: inject the content script and identify/message the active YouTube tab for scanning. Parsing a shared `youtu.be` link does not grant access to that host.
 
@@ -172,6 +179,7 @@ Before distributing through the Chrome Web Store, load `dist/` and perform this 
 7. Enable Hide Playables and topic suggestions; both sections should disappear with their outer spacing. Disable the toggle and confirm they return. In Hide modes, check later videos fill partial rows before full-width shelves, including after resizing the window.
 8. Enable Hide Shorts on Home, verify Home has no Shorts shelves/cards, verify Hide Shorts in Search independently controls search results, then navigate to a channel's Shorts tab and the dedicated Shorts page. Those surfaces should remain available. Return Home and toggle the setting off to restore the shelves.
 9. Enable Hide playlists and Mixes. Check collection cards disappear and return when disabled. Play an individual video in a playlist and confirm playback and its playlist panel remain usable. Watching its first video must not mark the collection watched.
+10. Set Hide repeated recommendations to 1 visit. Scroll Home, open a video, and return: the cards you scrolled past should be hidden and replaced by later ones, without any card disappearing while you are looking at it. Set Videos per channel to 1 and confirm no channel appears twice. Turn both off and confirm the cards return. Check the Home statistics increase once per visit, not when scrolling.
 
 Keep `src/youtube/selectors.ts` and the DOM fixtures together when adapting to a changed layout. Store packaging/publishing is separate from the unpacked build; no extension was installed into your Chrome profile or published automatically.
 
