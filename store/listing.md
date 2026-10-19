@@ -31,10 +31,10 @@ MARK OR UNDO IN A MOMENT
 Mark a video watched or unwatched using thumbnail controls, supported YouTube three-dot menus, or Chrome's right-click menu. Scan the currently rendered YouTube page to import qualifying progress indicators without fetching your Google account's watch-history database.
 
 TAILOR YOUR FEED
-Optional filters hide playlists and Mixes, Shorts on Home, and supported Playables and topic-suggestion sections. These options are off by default.
+Optional filters hide playlists and Mixes, Shorts on Home, and supported Playables and topic-suggestion sections. These options are off by default, except that Shorts in search results are hidden by default; switch this off in Filters.
 
 YOUR HISTORY STAYS LOCAL
-Video IDs, titles, playback progress, timestamps, settings, and filtering statistics stay in this Chrome profile. No extension account, analytics service, cloud sync, or developer server receives your extension data. Clear watched history in the popup or Options page, or uninstall to remove local extension data.
+Video IDs, titles, playback progress, timestamps, Home feed impression counts (forgotten after 30 days), settings, and filtering statistics stay in this Chrome profile. No extension account, analytics service, cloud sync, or developer server receives your extension data. Clear watched history in the popup or Options page, or uninstall to remove local extension data.
 
 Already Watched makes no direct network requests. Hide and load more can trigger YouTube's own normal recommendation requests. It does not change YouTube's recommendation algorithm or guarantee that every remaining video is new to you.
 
