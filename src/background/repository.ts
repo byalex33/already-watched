@@ -138,14 +138,15 @@ export class Repository {
     if (message.type === 'mark') {
       const next: VideoRecord = message.watched
         ? { ...previous, videoId: message.videoId, title: message.title?.slice(0, 300) || previous?.title, watched: true, source: 'manual', watchedAt: previous?.watchedAt ?? Date.now(), progress: previous?.progress ?? 0, lastSeen: Date.now(), unwatchedOverride: false }
-        : { videoId: message.videoId, title: message.title?.slice(0, 300) || previous?.title, watched: false, source: 'manual', progress: 0, lastSeen: Date.now(), unwatchedOverride: true, segments: [] };
-      // Invalidate in-flight playback when manually resetting a video.
-      await this.commitRecord(previous, next, stats, message.watched ? {} : { [REVISION_KEY]: revision + 1 });
+        : { videoId: message.videoId, title: message.title?.slice(0, 300) || previous?.title, watched: false, source: 'manual', progress: 0, lastSeen: Date.now(), unwatchedOverride: true, segments: [], resetAt: Date.now() };
+      await this.commitRecord(previous, next, stats);
       return next;
     }
     if (message.type === 'progress') {
       const settings = await getSettings();
       if (!settings.enabled) return null;
+      // Playback observed before a manual reset must not restore this video's progress.
+      if (previous?.resetAt !== undefined && message.startedAt < previous.resetAt) return { stale: true };
       const next = playbackRecord(previous, { ...message, title: message.title?.slice(0, 300) }, settings.threshold);
       await this.commitRecord(previous, next, stats);
       return next;

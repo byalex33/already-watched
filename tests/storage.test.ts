@@ -84,14 +84,14 @@ describe('single-writer repository', () => {
     expect(data[videoKey(id)]).toBeUndefined();
     expect(data[REVISION_KEY]).toBe(1);
     expect((await repository.dispatch({ type: 'summary' }) as Summary).settings.threshold).toBe(85);
-    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], startedAt: 0, revision: 0 })).toEqual({ stale: true });
   });
   it('finishes an interrupted clear after the worker restarts before accepting stale playback', async () => {
     await repository.dispatch({ type: 'mark', videoId: id, watched: true });
     vi.mocked(chrome.storage.local.remove).mockRejectedValueOnce(new Error('Interrupted'));
     await expect(repository.dispatch({ type: 'clear' })).rejects.toThrow('Interrupted');
     repository = new Repository();
-    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], startedAt: 0, revision: 0 })).toEqual({ stale: true });
     expect(data[videoKey(id)]).toBeUndefined();
     expect(sessionData).toEqual({});
   });
@@ -109,8 +109,8 @@ describe('single-writer repository', () => {
 
   it('serializes simultaneous tabs and persists only individual changed records', async () => {
     await Promise.all([
-      repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 40]], revision: 0 }),
-      repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[40, 80]], revision: 0 })
+      repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 40]], startedAt: 0, revision: 0 }),
+      repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[40, 80]], startedAt: 0, revision: 0 })
     ]);
     expect(data[videoKey(id)]).toMatchObject({ watched: true, progress: .8 });
     expect(data[STATS_KEY]).toMatchObject({ totalMarked: 1 });
@@ -129,13 +129,13 @@ describe('single-writer repository', () => {
     expect((data[videoKey(id)] as VideoRecord).watchedAt).toBeUndefined();
     await repository.dispatch({ type: 'mark', videoId: id, watched: false });
     expect(data[videoKey(id)]).toMatchObject({ watched: false, unwatchedOverride: true, segments: [] });
-    expect(await repository.dispatch({ type: 'import', videos, revision: 1 })).toEqual({ imported: 0 });
+    expect(await repository.dispatch({ type: 'import', videos, revision: 0 })).toEqual({ imported: 0 });
   });
   it('reset preserves settings and rejects queued pre-reset playback', async () => {
     await repository.dispatch({ type: 'settings', settings: { ...DEFAULT_SETTINGS, threshold: 80 } });
     await repository.dispatch({ type: 'mark', videoId: id, watched: true });
     await repository.dispatch({ type: 'clear' });
-    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], startedAt: 0, revision: 0 })).toEqual({ stale: true });
     const summary = await repository.dispatch({ type: 'summary' }) as Summary;
     expect(summary.watchedCount).toBe(0);
     expect(summary.totalMarked).toBe(0);
@@ -143,14 +143,27 @@ describe('single-writer repository', () => {
     expect(data[REVISION_KEY]).toBe(1);
   });
   it('manual unwatched invalidates old progress and allows freshly observed playback', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_000);
     await repository.dispatch({ type: 'mark', videoId: id, watched: false });
-    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 })).toEqual({ stale: true });
-    await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 80]], revision: 1 });
+    expect(data[videoKey(id)]).toMatchObject({ resetAt: 1_000 });
+    expect(await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], startedAt: 999, revision: 0 })).toEqual({ stale: true });
+    expect(data[videoKey(id)]).toMatchObject({ watched: false, segments: [] });
+    await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 80]], startedAt: 1_000, revision: 0 });
     expect(data[videoKey(id)]).toMatchObject({ watched: true, unwatchedOverride: false, source: 'playback' });
+    vi.restoreAllMocks();
+  });
+  it('resetting one video leaves the history revision and other videos alone', async () => {
+    const other = 'aaaaaaaaaaa';
+    vi.spyOn(Date, 'now').mockReturnValue(5_000);
+    await repository.dispatch({ type: 'mark', videoId: id, watched: false });
+    expect(data[REVISION_KEY]).toBeUndefined();
+    await repository.dispatch({ type: 'progress', videoId: other, duration: 100, segments: [[0, 80]], startedAt: 1_000, revision: 0 });
+    expect(data[videoKey(other)]).toMatchObject({ watched: true });
+    vi.restoreAllMocks();
   });
   it('does not save automatic playback while disabled', async () => {
     await repository.dispatch({ type: 'settings', settings: { ...DEFAULT_SETTINGS, enabled: false } });
-    await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], revision: 0 });
+    await repository.dispatch({ type: 'progress', videoId: id, duration: 100, segments: [[0, 90]], startedAt: 0, revision: 0 });
     expect(data[videoKey(id)]).toBeUndefined();
   });
   it('surfaces storage failures and recovers without poisoning the write queue', async () => {

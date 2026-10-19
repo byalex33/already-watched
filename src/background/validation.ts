@@ -17,6 +17,7 @@ export function validRequest(input: unknown): input is Request {
     case 'settings': return !!v.settings && typeof v.settings === 'object';
     case 'mark': return isVideoId(v.videoId) && typeof v.watched === 'boolean' && title(v.title);
     case 'progress': return isVideoId(v.videoId) && title(v.title) && revision()
+      && typeof v.startedAt === 'number' && Number.isFinite(v.startedAt) && v.startedAt >= 0
       && typeof v.duration === 'number' && Number.isFinite(v.duration) && v.duration > 0
       && Array.isArray(v.segments) && v.segments.length <= 128
       && v.segments.every(s => Array.isArray(s) && s.length === 2 && s.every(n => typeof n === 'number' && Number.isFinite(n)) && s[0] >= 0 && s[1] > s[0] && s[1] <= (v.duration as number));

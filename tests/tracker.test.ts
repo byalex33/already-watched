@@ -124,4 +124,12 @@ describe('player tracking', () => {
     expect(progressMessages()).toHaveLength(1);
     expect(progressMessages()[0]).toMatchObject({ revision: 1, segments: [[6, 8]] });
   });
+  it('drops only the reset video\'s earlier playback when it is marked unwatched', async () => {
+    tracker = new VideoTracker(() => state, vi.fn()); await play(5);
+    state.records[id] = { videoId: id, watched: false, progress: 0, lastSeen: Date.now(), source: 'manual', unwatchedOverride: true, segments: [], resetAt: Date.now() };
+    await play(3); tracker.stop(); await Promise.resolve();
+    const sent = progressMessages();
+    expect(sent.every(message => message.startedAt >= state.records[id]!.resetAt!)).toBe(true);
+    expect(mergeSegments(sent.flatMap(message => message.segments), 100)).toEqual([[6, 8]]);
+  });
 });
