@@ -8,7 +8,8 @@ export function isVideoRecord(value: unknown): value is VideoRecord {
   const v = value as Record<string, unknown>;
   return isVideoId(v.videoId) && typeof v.watched === 'boolean' && typeof v.progress === 'number'
     && Number.isFinite(v.progress) && v.progress >= 0 && v.progress <= 1 && typeof v.lastSeen === 'number'
-    && ['playback', 'manual', 'youtube-ui'].includes(String(v.source));
+    && ['playback', 'manual', 'youtube-ui'].includes(String(v.source))
+    && (v.resetAt === undefined || (typeof v.resetAt === 'number' && Number.isFinite(v.resetAt)));
 }
 export function readRecords(data: Record<string, unknown>): Record<string, VideoRecord> {
   const records: Record<string, VideoRecord> = {};

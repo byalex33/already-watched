@@ -28,6 +28,8 @@ export interface VideoRecord {
   source: 'playback' | 'manual' | 'youtube-ui';
   importedAt?: number;
   unwatchedOverride?: boolean;
+  // When the video was last marked unwatched; playback observed earlier is discarded.
+  resetAt?: number;
   segments?: Segment[];
 }
 export interface Stats {
@@ -77,7 +79,7 @@ export type Request =
   | { type: 'summary' }
   | { type: 'settings'; settings: Partial<Settings> }
   | { type: 'mark'; videoId: string; watched: boolean; title?: string }
-  | { type: 'progress'; videoId: string; title?: string; duration: number; segments: Segment[]; revision: number }
+  | { type: 'progress'; videoId: string; title?: string; duration: number; segments: Segment[]; startedAt: number; revision: number }
   | { type: 'import'; videos: { videoId: string; title?: string; progress: number }[]; revision: number }
   | { type: 'touch'; videoIds: string[]; revision: number }
   | { type: 'filtered'; videoIds: string[]; revision: number; day?: string }

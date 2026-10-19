@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Marking a video unwatched now only discards that video's earlier playback. Other tabs keep their unsaved progress and statistics.
+- Unsaved title and view filters survive switching popup tabs.
+- Correct the Hide repeated recommendations description: it counts earlier Home visits, whether or not you opened the video.
+- Privacy policy and store listing describe Home feed impressions, their 30-day expiry, and the optional Post on X button.
+- Store artwork and popup previews start from the extension's real default settings.
+
 ## 1.1.0
 
 - Add **Hide repeated recommendations**: hide Home videos that have been on screen for a chosen number of earlier Home visits. Defaults off. Impressions are forgotten after 30 days.

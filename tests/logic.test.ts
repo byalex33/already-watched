@@ -90,8 +90,10 @@ describe('dates and counters', () => {
   });
 });
 it('rejects malformed and excessive messages at the worker boundary', () => {
-  expect(validRequest({ type: 'progress', videoId: id, duration: Infinity, segments: [[0, 80]], revision: 0 })).toBe(false);
-  expect(validRequest({ type: 'progress', videoId: id, duration: 100, segments: [[0, 101]], revision: 0 })).toBe(false);
+  expect(validRequest({ type: 'progress', videoId: id, duration: Infinity, segments: [[0, 80]], startedAt: 0, revision: 0 })).toBe(false);
+  expect(validRequest({ type: 'progress', videoId: id, duration: 100, segments: [[0, 101]], startedAt: 0, revision: 0 })).toBe(false);
+  expect(validRequest({ type: 'progress', videoId: id, duration: 100, segments: [[0, 80]], revision: 0 })).toBe(false);
+  expect(validRequest({ type: 'progress', videoId: id, duration: 100, segments: [[0, 80]], startedAt: 0, revision: 0 })).toBe(true);
   expect(validRequest({ type: 'filtered', videoIds: Array(501).fill(id), revision: 0 })).toBe(false);
   expect(validRequest({ type: 'mark', videoId: id, watched: true })).toBe(true);
   expect(validRequest({ type: 'unknown' })).toBe(false);

@@ -184,7 +184,7 @@ export function App() {
         <p className="hint">The percentage of a video you play. Skipped sections don’t count.</p>
       </Group>
       <Group id="home-feed" title="Home feed" summary={`${settings.hideRepeatsAfter ? `Hide after ${plural(settings.hideRepeatsAfter, 'visit')}` : 'Repeats shown'} · ${settings.channelCap ? `${settings.channelCap} per channel` : 'No channel limit'}`} {...group}>
-        <SelectRow id="hide-repeats" label="Hide repeated recommendations" description="Hide a Home video once it has been on screen this many visits without you opening it." value={settings.hideRepeatsAfter} options={REPEAT_OPTIONS} onChange={hideRepeatsAfter => { void update({ hideRepeatsAfter }); }} />
+        <SelectRow id="hide-repeats" label="Hide repeated recommendations" description="Hide a Home video once it has been on screen on this many earlier visits." value={settings.hideRepeatsAfter} options={REPEAT_OPTIONS} onChange={hideRepeatsAfter => { void update({ hideRepeatsAfter }); }} />
         <SelectRow id="channel-cap" label="Videos per channel" description="Limit how many videos one channel can fill on Home." value={settings.channelCap} options={CHANNEL_OPTIONS} onChange={channelCap => { void update({ channelCap }); }} />
         <p className="hint">A video counts as shown when most of it is on screen. Videos that leave Home for 30 days are forgotten, so they can come back.</p>
       </Group>
@@ -242,7 +242,8 @@ export function App() {
       <Tabs current={tab} onChange={setTab} />
     </div>
     {(error || summary.error) && <p className="error" role="alert">{error || summary.error}</p>}
-    <div className="tab-panel" role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={0}>{panels[tab]}</div>
+    {/* Inactive panels stay mounted so unsaved drafts survive switching tabs. */}
+    {TABS.map(({ id }) => <div key={id} className="tab-panel" role="tabpanel" id={`panel-${id}`} aria-labelledby={`tab-${id}`} tabIndex={0} hidden={id !== tab}>{panels[id]}</div>)}
     <footer><p>Version {chrome.runtime.getManifest?.().version ?? 'preview'}</p><p className="privacy-note"><svg aria-hidden="true" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="2" /><path d="M5 7V5a3 3 0 0 1 6 0v2" /></svg>History and settings are saved on this device.</p><p>Already Watched is open source. <a href="https://github.com/byalex33/already-watched" target="_blank" rel="noreferrer">Help contribute on GitHub ↗</a></p></footer>
   </main>;
 }

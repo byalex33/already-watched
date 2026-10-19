@@ -13,6 +13,7 @@ interface Session {
   last?: Sample;
   title?: string;
   revision: number;
+  startedAt: number;
   lastSave: number;
   saving: boolean;
   retryAfter: number;
@@ -78,8 +79,11 @@ export class VideoTracker {
     if (session && (session.videoId !== route.videoId || session.video !== video || session.source !== video.currentSrc || Math.abs(session.duration - video.duration) > 1 || session.revision !== snapshot.revision)) {
       this.detach(true); session = undefined;
     }
+    // The video was marked unwatched after this session began; its segments would be rejected.
+    const resetAt = snapshot.records[route.videoId]?.resetAt;
+    if (session && resetAt !== undefined && session.startedAt < resetAt) { this.detach(); session = undefined; }
     if (!session) {
-      session = { videoId: route.videoId, video, source: video.currentSrc, duration: video.duration, segments: [], revision: snapshot.revision, lastSave: Date.now(), saving: false, retryAfter: 0, retiredFailures: 0, title: document.querySelector(SELECTORS.watchTitle)?.textContent?.trim().slice(0, 300) };
+      session = { videoId: route.videoId, video, source: video.currentSrc, duration: video.duration, segments: [], revision: snapshot.revision, startedAt: Date.now(), lastSave: Date.now(), saving: false, retryAfter: 0, retiredFailures: 0, title: document.querySelector(SELECTORS.watchTitle)?.textContent?.trim().slice(0, 300) };
       this.session = session;
       video.addEventListener('seeking', this.interrupt);
       video.addEventListener('emptied', this.interrupt);
@@ -116,7 +120,7 @@ export class VideoTracker {
     session.saving = true;
     session.lastSave = Date.now();
     try {
-      await request({ type: 'progress', videoId: session.videoId, title: session.title, duration: session.duration, segments, revision: session.revision });
+      await request({ type: 'progress', videoId: session.videoId, title: session.title, duration: session.duration, segments, startedAt: session.startedAt, revision: session.revision });
     } catch (error) {
       session.segments = mergeSegments([...segments, ...session.segments], session.duration);
       session.retryAfter = Date.now() + 15_000;

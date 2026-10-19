@@ -43,7 +43,7 @@ describe('reference compatibility regressions', () => {
     expect(isWatched(record, null, false, DEFAULT_SETTINGS)).toBe(true);
     await repository.dispatch({ type: 'mark', videoId: card.videoId, watched: false });
     expect(isWatched(data[videoKey(card.videoId)] as VideoRecord, card.progress, false, DEFAULT_SETTINGS)).toBe(false);
-    expect(await repository.dispatch({ type: 'import', videos, revision: 1 })).toEqual({ imported: 0 });
+    expect(await repository.dispatch({ type: 'import', videos, revision: 0 })).toEqual({ imported: 0 });
   });
   it('rejects active playback hints but still reads genuine resume history in the same card', () => {
     const root = fixture('related-playing');

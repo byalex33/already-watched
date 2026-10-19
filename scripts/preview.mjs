@@ -5,9 +5,11 @@ import { resolve, extname } from 'node:path';
 import { build } from 'esbuild';
 const root = resolve('dist');
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
-const mock = `
+// Previews start from the extension's real defaults, so they never drift from it.
+const defaults = (await build({ stdin: { contents: "import { DEFAULT_SETTINGS } from './src/shared/constants'; window.__AW_DEFAULTS__ = DEFAULT_SETTINGS;", resolveDir: resolve('.'), loader: 'ts' }, bundle: true, write: false, format: 'iife', target: 'chrome114' })).outputFiles[0].text;
+const mock = defaults + `
 const listeners = new Set();
-let settings = { enabled:true, displayMode:'badge-dim', threshold:70, useYouTubeProgress:true, applyToShorts:true, showWatchedDate:true, hidePromotionalSections:false, hideHomeShorts:false, hideSearchShorts:true, hideWatchedInSearch:false, hideHomeLivestreams:false, hidePlaylists:false, minimumViews:0, blockedTitleTerms:[], hideRepeatsAfter:3, channelCap:2 };
+let settings = { ...window.__AW_DEFAULTS__, hideRepeatsAfter:3, channelCap:2 };
 let watchedCount = 1248, filteredToday = 32, filteredAllTime = 864;
 const emptyHome = { visits:0, served:0, distinct:0, repeats:0, watched:0, since:0, top:[] };
 let home = { visits:41, served:1312, distinct:388, repeats:924, watched:146, since:Date.now() - 12 * 86400000, top:[

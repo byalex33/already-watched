@@ -21,7 +21,7 @@
 <body><main>
   <header><svg class="icon" aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16s5-8 13-8 13 8 13 8-5 8-13 8S3 16 3 16Z"/><path d="m11 16 3 3 7-7"/></svg><span>Already Watched<span class="dot">.</span></span></header>
   <h1>Privacy policy</h1>
-  <p class="date">Effective 6 September 2026 · Extension version 1.0.0</p>
+  <p class="date">Effective 19 October 2026 · Extension version 1.1.0</p>
   <div class="summary">Your watched-video history stays in your Chrome profile. Already Watched has no account system, analytics service, or server that receives your extension data.</div>
   <h2>What the extension handles</h2>
   <p>Already Watched helps you recognise and filter videos you have already watched on desktop YouTube. To provide these features, it reads video links and titles, thumbnail progress indicators, supported feed elements, and video-player playback activity on YouTube pages.</p>
@@ -30,7 +30,8 @@
     <li>Video IDs and available titles; watched or unwatched status; and manual unwatched overrides.</li>
     <li>Observed playback segments and progress; watch, import, and last-seen timestamps where available; and whether a record came from playback, a manual action, or a page scan.</li>
     <li>Your settings, such as the watched threshold, display mode, optional feed filters.</li>
-    <li>Local statistics, including mark counts, daily filtered-video IDs, aggregate filtering totals, and storage status.</li>
+    <li>Home feed impressions: for each video YouTube recommends on your Home page, its ID, available title, how many Home visits served it and showed it on screen, and when it last appeared. This includes videos you have not opened. Impressions power the repeated-recommendation and channel-limit options and the Home statistics.</li>
+    <li>Local statistics, including mark counts, daily filtered-video IDs, aggregate filtering totals, Home visit totals, and storage status.</li>
   </ul>
   <p>It does not request your Google login, cookies, payment details, or Chrome browsing-history database. It does not read pages on other websites. Scanning a page reads qualifying progress indicators already displayed on that page; it does not fetch your Google account's watch-history database.</p>
   <h2>How this information is used</h2>
@@ -38,15 +39,16 @@
   <h2>Storage, sharing, and network requests</h2>
   <p>Extension data is saved using <code>chrome.storage.local</code> in the Chrome profile where you installed Already Watched. It is not synced with Chrome Sync or sent to the developer, advertisers, or other third parties. We do not sell it, use it for advertising, or use it to make credit or lending decisions.</p>
   <p>All extension scripts and assets are bundled with the installation. The extension makes no direct network requests. If you select Hide + refill, it can trigger YouTube's existing recommendation-loading controls. YouTube then makes its normal requests under its own privacy policy; Already Watched does not transmit its stored history with those requests.</p>
+  <p>After five Home visits, the Stats tab offers an optional <strong>Post on X</strong> button. It opens X in a new tab with editable text built from your Home statistics, which can include the title of the video YouTube showed you most often. Nothing is sent unless you choose to post it on X, under X's own privacy policy.</p>
   <h2>Why these permissions are needed</h2>
   <ul>
-    <li><strong>Storage:</strong> saves settings, video history, playback progress, and statistics on your device.</li>
+    <li><strong>Storage:</strong> saves settings, video history, playback progress, Home feed impressions, and statistics on your device.</li>
     <li><strong>Context menus:</strong> adds watched and unwatched commands to supported YouTube video links and pages.</li>
     <li><strong>YouTube access:</strong> runs the extension on <code>https://www.youtube.com/*</code> and <code>https://youtube.com/*</code>, reads the video information needed for its features, updates feed presentation, and connects the popup's scan command to the active YouTube tab.</li>
   </ul>
   <h2>Your controls and data retention</h2>
-  <p>Records remain locally until you clear them or uninstall the extension; there is no automatic expiry. You can mark a video unwatched to reset its recorded playback and suppress existing YouTube progress hints for that video. This retains a local override so it is not immediately imported again.</p>
-  <p>In the popup or Options page, select <strong>Clear watched history</strong> and confirm <strong>Clear history</strong> to remove video records, partial playback, manual overrides, and statistics. This keeps your settings. YouTube's own progress indicators may still appear if that setting is enabled, and subsequent playback can create new records.</p>
+  <p>Watched-video records remain locally until you clear them or uninstall the extension. Home feed impressions are deleted automatically 30 days after a video last appeared on your Home page. You can mark a video unwatched to reset its recorded playback and suppress existing YouTube progress hints for that video. This retains a local override so it is not immediately imported again.</p>
+  <p>In the popup or Options page, select <strong>Clear watched history</strong> and confirm <strong>Clear history</strong> to remove video records, partial playback, manual overrides, Home feed impressions, and statistics. This keeps your settings. YouTube's own progress indicators may still appear if that setting is enabled, and subsequent playback can create new records.</p>
   <p>Switch off the extension's enabled toggle to pause automatic tracking and filtering. Existing data remains stored, and manual marking commands remain available. Uninstalling the extension removes its local extension data.</p>
   <h2>Security</h2>
   <p>Already Watched does not add its own encryption to local records. Someone with access to your Chrome profile may be able to inspect them. Protect your device and browser profile accordingly.</p>
