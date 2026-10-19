@@ -7,7 +7,9 @@ const root = resolve('.');
 const extensionRoot = process.argv.includes('--release')
   ? JSON.parse(await readFile(resolve(root, 'store/release-manifest.json'), 'utf8')).snapshotDirectory
   : root;
-const mock = `const listeners=new Set();let settings={enabled:true,displayMode:'badge-dim',threshold:70,useYouTubeProgress:true,applyToShorts:true,showWatchedDate:true,hidePromotionalSections:false,hideHomeShorts:false,hidePlaylists:false,minimumViews:0,blockedTitleTerms:[]};window.chrome={storage:{onChanged:{addListener:f=>listeners.add(f),removeListener:f=>listeners.delete(f)}},runtime:{sendMessage:async m=>{if(m.type==='settings'){settings={...settings,...m.settings};listeners.forEach(f=>f())}return {ok:true,data:{settings,watchedCount:12,filteredToday:4,filteredAllTime:28,totalMarked:12,storageBytes:16384}}}},tabs:{query:async()=>[{id:1,url:'https://www.youtube.com/'}],sendMessage:async()=>({ok:true,data:{imported:0,detected:0}})}};`;
+// Previews start from the extension's real defaults, so they never drift from it.
+const defaults = (await build({ stdin: { contents: "import { DEFAULT_SETTINGS } from './src/shared/constants'; window.__AW_DEFAULTS__ = DEFAULT_SETTINGS;", resolveDir: resolve('.'), loader: 'ts' }, bundle: true, write: false, format: 'iife', target: 'chrome114' })).outputFiles[0].text;
+const mock = defaults + `const listeners=new Set();let settings={...window.__AW_DEFAULTS__};window.chrome={storage:{onChanged:{addListener:f=>listeners.add(f),removeListener:f=>listeners.delete(f)}},runtime:{sendMessage:async m=>{if(m.type==='settings'){settings={...settings,...m.settings};listeners.forEach(f=>f())}return {ok:true,data:{settings,watchedCount:12,filteredToday:4,filteredAllTime:28,totalMarked:12,storageBytes:16384,home:{visits:6,served:180,distinct:74,repeats:106,watched:9,since:Date.now()-6*86400000,top:[]}}}}},tabs:{query:async()=>[{id:1,url:'https://www.youtube.com/'}],sendMessage:async()=>({ok:true,data:{imported:0,detected:0}})}};`;
 const types = { '.html':'text/html; charset=utf-8', '.js':'text/javascript', '.css':'text/css', '.png':'image/png' };
 createServer(async (req,res) => {
   try {
