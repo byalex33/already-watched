@@ -7,6 +7,7 @@
 - Correct the Hide repeated recommendations description: it counts earlier Home visits, whether or not you opened the video.
 - Privacy policy and store listing describe Home feed impressions, their 30-day expiry, and the optional Post on X button.
 - Store artwork and popup previews start from the extension's real default settings.
+- Privacy policy now lists the displayed view counts the extension reads and the minimum-view and title filter settings it stores.
 
 ## 1.1.0
 
