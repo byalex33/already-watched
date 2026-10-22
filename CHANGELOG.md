@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Read titles from YouTube's renamed Home lockup cards, so title-word filters, Home statistics and thumbnail control labels work again.
 - Marking a video unwatched now only discards that video's earlier playback. Other tabs keep their unsaved progress and statistics.
 - Unsaved title and view filters survive switching popup tabs.
 - Correct the Hide repeated recommendations description: it counts earlier Home visits, whether or not you opened the video.
