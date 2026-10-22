@@ -1,6 +1,6 @@
 import { mkdir, cp, readFile } from 'node:fs/promises';
 const html = await readFile('src/index.html', 'utf8');
-for (const required of ['hello@alex.codes', 'chrome.storage.local', 'Clear watched history', 'Limited Use', 'Home feed impressions', '30 days', 'Post on X']) {
+for (const required of ['hello@alex.codes', 'chrome.storage.local', 'Clear watched history', 'Limited Use', 'Home feed impressions', '30 days', 'Post on X', 'displayed view counts', 'blocked title words']) {
   if (!html.includes(required)) throw new Error(`Missing privacy disclosure: ${required}`);
 }
 await mkdir('dist', { recursive: true });
